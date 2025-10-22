@@ -1,0 +1,26 @@
+{
+    // Use this file to configure debugging in VS Code.
+    // It launches the current file using the "venvmusic" virtual environment.
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File (venvmusic)",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+
+            // Windows
+            "pythonPath": "${workspaceFolder}/venvmusic/Scripts/python.exe",
+
+            // macOS / Linux
+            // "pythonPath": "${workspaceFolder}/venvmusic/bin/python",
+
+            "env": {
+                "VIRTUAL_ENV": "${workspaceFolder}/venvmusic",
+                "PATH": "${workspaceFolder}/venvmusic/Scripts:${env:PATH}"
+            }
+        }
+    ]
+}

@@ -10,23 +10,38 @@ import time
 import os
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from subprocess import CREATE_NO_WINDOW
 
 #Step 1: Initialise the Selenium driver
-def init_driver():
+def init_driver(headless=False, use_profile=False):
     options = Options()
     options.add_experimental_option("detach", True)
     options.add_argument("--start-maximized")
     options.add_argument("--mute-audio")
     options.add_argument("--lang=en")
     options.add_argument("--disable-gpu")
-    options.add_argument("--headless=new")
-    prefs = {"profile.managed_default_content_settings.images": 2}
-    return webdriver.Chrome(service=Service(r"./chromedriver.exe"), options=options)
+    
+    if headless:
+        options.add_argument("--headless=new")
+    else:
+        options.add_argument("--start-maximized")
+        
+    if use_profile:
+        options.add_argument(r"--user-data-dir=C:\Users\marti\AppData\Local\BraveSoftware\Brave-Browser\User Data")
+        options.add_argument(r'--profile-directory=Default')
+        
+    options.binary_location = BRAVE_PATH
+    #prefs = {"profile.managed_default_content_settings.images": 2}
+    
+    service = Service(executable_path = CHROMEDRIVER_PATH)
+    service.creation_flags = CREATE_NO_WINDOW
+    
+    return webdriver.Chrome(service=service, options=options)
 
 #Step 2: Opening the YouTube page
 def open_youtube_page(driver, url):
-    driver.get(url)
     print("Opening YouTube page...")
+    driver.get(url)
 
 
 #Step 3: Skip cookie pop-ups
@@ -269,8 +284,14 @@ def read_youtube_links_from_file(filepath):
     return links
 
 if __name__ == "__main__":
-    #Read links from the file
-    links_file = "Youtube_links.txt"
+    
+    CHROMEDRIVER_PATH ="./chromedriver.exe"
+    
+    BRAVE_PATH= "C:/Program Files/BraveSoftware/Brave-Browser/Application/brave.exe"
+
+    links_file = "./Youtube_links.txt"
+    
+    OUTPUT_FOLDER = "./data/youtubeTranscripts"
     youtube_urls = read_youtube_links_from_file(links_file)
     print(f"{len(youtube_urls)} links loaded from {links_file}")
 
