@@ -3,9 +3,12 @@ import cloudscraper
 import re
 import os
 import time
-from privacy import get_random_user_agent, HumanBehavior, RateLimiter
+from privacy_utils import get_random_user_agent, HumanBehavior, RateLimiter
+from metadata import extract_sample_metadata
+from typing import List, Dict
+import random
 
-class SampleFocusAutomator:
+class SampleFocusExtractor:
     def __init__(self):
         self.scraper = cloudscraper.create_scraper()
         self.human_behavior = HumanBehavior()
@@ -34,7 +37,6 @@ class SampleFocusAutomator:
             print(f"📄 Status Code: {response.status_code}")
             
             if response.status_code == 200:
-                # Pattern più diretto e efficace
                 patterns = [
                     r'https://d9olupt5igjta\.cloudfront\.net/samples/sample_files/\d+/[a-f0-9]+/mp3/[^\s"\'<>]+\.mp3\?[^\s"\'<>]+',
                     r'contentUrl["\']?\s*content=["\']([^"\']+\.mp3[^"\']*)["\']',
@@ -121,19 +123,26 @@ class SampleFocusAutomator:
         
         if mp3_url:
             # Download diretto
-            return self.download_file(mp3_url, page_url, output_dir)
+            success = self.download_file(mp3_url, page_url, output_dir)
+            if success:
+                # Estrai e salva i metadati
+                metadata = extract_sample_metadata(page_url, self.scraper)
+                if metadata:
+                    sample_name = page_url.split('/')[-1]
+                    self.save_metadata(metadata, output_dir, sample_name)
+            return True
         else:
             print("❌ Impossibile procedere con il download")
             return False
     
-    def process_multiple_samples(self, url_list, output_dir="downloads"):
+    def process_multiple_samples(self, url_list, output_dir="downloads",delay=3):
         """Processa multipli samples"""
         results = []
         
         for i, url in enumerate(url_list, 1):
-            print(f"\n{'='*50}")
             print(f"🎵 Processing {i}/{len(url_list)}: {url}")
             
+            # Ensure we are passing only the URL string, not a tuple
             success = self.process_single_sample(url, output_dir)
             results.append((url, success))
             
@@ -144,44 +153,67 @@ class SampleFocusAutomator:
                 time.sleep(delay)
         
         return results
-
-
-def main():
-    automator = SampleFocusAutomator()
     
-    # Configurazione
-    OUTPUT_DIR = "./data/downloads"
     
-    print("=== SAMPLEFOCUS DOWNLOADER ===")
-    
-    # 📥 SINGOLO DOWNLOAD
-    print("\n1. DOWNLOAD SINGOLO")
-    single_url = "https://samplefocus.com/samples/woman-harmonizing-vocal"
-    success = automator.process_single_sample(single_url, OUTPUT_DIR)
-    
-    if success:
-        print("🎉 Download singolo completato con successo!")
-    else:
-        print("💥 Download singolo fallito")
-    
-    # 📥 MULTIPLI DOWNLOAD (opzionale)
-    print("\n2. DOWNLOAD MULTIPLI")
-    sample_urls = [
-        "https://samplefocus.com/samples/woman-harmonizing-vocal",
-        # Aggiungi altri URL qui se vuoi testare multipli
-        # "https://samplefocus.com/samples/your-sample-url",
-    ]
-    
-    if len(sample_urls) > 1:
-        results = automator.process_multiple_samples(sample_urls, OUTPUT_DIR)
+    def extract_from_sample_list(self, list_url, max_pages=1):
+        """Estrae URLs di samples da una pagina di lista (categoria, ricerca, etc.)"""
+        sample_urls = []
         
-        # Riepilogo
-        print("\n📊 RIEPILOGO DOWNLOAD:")
-        success_count = sum(1 for _, success in results if success)
-        print(f"✅ Successi: {success_count}/{len(results)}")
-        print(f"❌ Falliti: {len(results) - success_count}/{len(results)}")
+        try:
+            print(f"📄 Estraendo samples da: {list_url}")
+            response = self.scraper.get(list_url)
+            if response.status_code != 200:
+                print(f"❌ Errore nell'accedere alla lista: {response.status_code}")
+                return sample_urls
+
+            # Pattern per trovare links ai samples individuali
+            # Cerchiamo URL che contengono /samples/ seguito da uno slug
+            pattern = r'https://samplefocus\.com/samples/[a-zA-Z0-9-]+'
+            found_urls = re.findall(pattern, response.text)
+            
+            # Rimuovi duplicati e filtra solo quelli validi
+            unique_urls = list(set(found_urls))
+            
+            # Filtra ulteriormente: solo URL che hanno il formato corretto (escludi altri percorsi)
+            sample_urls = [url for url in unique_urls if re.match(r'https://samplefocus\.com/samples/[a-zA-Z0-9-]+$', url)]
+            
+            print(f"📋 Trovati {len(sample_urls)} samples unici")
+            
+            # Se vogliamo gestire paginazione, possiamo cercare il link alla prossima pagina
+            # Ma per ora restituiamo solo la prima pagina
+            return sample_urls
+
+        except Exception as e:
+            print(f"❌ Errore nell'estrazione della lista: {e}")
+            return []
+        
+        
+    def save_metadata(self, metadata: Dict, output_dir: str, filename: str):
+        """Salva i metadati in un file JSON"""
+        import json
+        filepath = os.path.join(output_dir, f"{filename}.json")
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(metadata, f, indent=2, ensure_ascii=False)
+        print(f"💾 Metadati salvati in: {filepath}")
+
+def download_by_category(category_url, max_samples=10, output_dir="category_downloads"):
+    """Scarica samples da una categoria specifica"""
+    automator = SampleFocusExtractor()
+    
+    print(f"🎯 Scaricando dalla categoria: {category_url}")
+    
+    # Estrai URLs dalla pagina della categoria
+    sample_urls = automator.extract_from_sample_list(category_url)
+    
+    if sample_urls:
+        # Limita il numero di samples
+        sample_urls = sample_urls[:max_samples]
+        print(f"🎵 Scaricando {len(sample_urls)} samples...")
+        
+        results = automator.process_multiple_samples(sample_urls, output_dir, delay=4)
+        return results
+    else:
+        print("❌ Nessun sample trovato in questa categoria")
+        return []
 
 
-if __name__ == "__main__":
-    import random
-    main()
