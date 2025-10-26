@@ -34,7 +34,7 @@ class HumanBehavior:
         if random.random() < 0.7:  # 70% del tempo
             return random.uniform(2, 5)
         else:  # 30% del tempo (più lento)
-            return random.uniform(10, 20)
+            return random.uniform(10, 20)      
         
     def get_headers(self):
         """Headers che cambiano ogni volta"""
@@ -62,14 +62,9 @@ class RateLimiter:
         """Determina se aspettare prima della prossima richiesta"""
         now = time.time()
         
-        # Rimuovi richieste vecchie
         self.request_times = [t for t in self.request_times if now - t < 3600]
-        
-        # Controlla limite orario
         if len(self.request_times) >= self.max_per_hour:
             return True
-            
-        # Controlla limite minuto
         recent_requests = [t for t in self.request_times if now - t < 60]
         if len(recent_requests) >= self.max_per_minute:
             return True
@@ -86,7 +81,6 @@ class RateLimiter:
         recent_requests = [t for t in self.request_times if now - t < 60]
         
         if len(recent_requests) >= self.max_per_minute:
-            # Aspetta fino al prossimo minuto
             oldest = min(recent_requests)
             return (oldest + 60) - now
             

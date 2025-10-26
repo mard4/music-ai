@@ -1,14 +1,13 @@
 
-from extract_ground_truth import extract_ground_truth, create_sample_mapping
-from extract_samples_wav import extract_selected_samples
+from FSD50KExtractor import FSD50KExtractor
 from pathlib import Path
 
-fsd50k_path = Path("data/audios/")
-fsd50k_zip_path = Path("data/audios/fsd50k.zip")
-ground_truth_dir = Path("data/data_processed/fsd50k/fsd50k_ground_truth")
-selected_samples_dir = Path("data/data_processed/fsd50k/fsd50k_selected_samples")
-selected_samples_files_dir = Path("data/data_processed/fsd50k/fsd50k_selected_samples/audios")
-    
+DATA_DIR = Path("data").resolve()
+AUDIO_DIR = DATA_DIR / "audios"
+FSD50K_ZIP = AUDIO_DIR / "fsd50k.zip"
+FSD50K_PROC_DIR = DATA_DIR / "data_processed" / "fsd50k"
+GROUND_TRUTH_DIR = FSD50K_PROC_DIR / "ground_truth"
+
 categories = [
         'Music', 'Musical', 'Instrument', 'Drum', 'Guitar', 'Bass', 'Violin', 
         'Piano', 'Synthesizer', 'String', 'Percussion', 'Wind', 'Brass',
@@ -21,12 +20,13 @@ categories = [
 
 
 if __name__ == "__main__":
+        
+    extractor = FSD50KExtractor(
+        main_zip_path=FSD50K_ZIP,
+        output_dir=GROUND_TRUTH_DIR)
     
-    extract_ground_truth(main_zip_path=fsd50k_zip_path, output_dir=ground_truth_dir)
-    create_sample_mapping(output_dir=selected_samples_dir,
-                          ground_truth_dir=ground_truth_dir,
-                          categories=categories,
-                          max_samples=100)
-    extract_selected_samples(input_dir=fsd50k_path,
-                 output_dir=selected_samples_files_dir,
-                  selected_samples_dir_csv=selected_samples_dir / "samples_mapping.csv")
+
+    success= extractor.full_pipeline(
+                categories=categories,
+                max_samples=50
+                )
