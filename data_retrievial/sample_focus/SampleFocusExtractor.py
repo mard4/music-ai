@@ -7,6 +7,7 @@ from privacy_utils import get_random_user_agent, HumanBehavior, RateLimiter
 from metadata import extract_sample_metadata
 from typing import List, Dict
 import random
+from pathlib import Path
 
 class SampleFocusExtractor:
     def __init__(self):
@@ -215,5 +216,4 @@ def download_by_category(category_url, max_samples=10, output_dir="category_down
     else:
         print("❌ Nessun sample trovato in questa categoria")
         return []
-
 
