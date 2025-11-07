@@ -1,6 +1,9 @@
 venv
 venvmusic
-data/
+data/audios
+data/daws
+data/downloads'
+data/plugins
 data_retrievial/sample_focus/sample_focus_data_retrievial_simplescript.py
 
 # Byte-compiled / optimized / DLL files
