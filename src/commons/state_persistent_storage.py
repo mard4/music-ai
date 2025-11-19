@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from data_models.audio_models import Sample, Metadata, AudioFiles
+from commons.data_models.audio_models import Sample, Metadata, AudioFiles
 
 class AudioFilesRepository(ABC):    
     """
