@@ -21,6 +21,20 @@ class AudioFilesRepository(ABC):
         pass
 
     @abstractmethod
+    async def update_audio_file(self, audio_id: str, update_data: dict) -> bool:
+        """
+        Update an existing audio file document.
+        
+        Args:
+            audio_id: ID of the document to update
+            update_data: Dictionary containing fields to update
+            
+        Returns:
+            True if update was successful, False otherwise
+        """
+        pass
+
+    @abstractmethod
     async def find_audio_by_filter(
         self,
         file_type: Optional[str] = None,

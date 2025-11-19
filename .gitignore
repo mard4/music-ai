@@ -6,6 +6,7 @@ src/data/downloads'
 src/data/plugins
 src/data_retrievial/sample_focus/sample_focus_data_retrievial_simplescript.py
 mongo_data
+test_quality.ipynb
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

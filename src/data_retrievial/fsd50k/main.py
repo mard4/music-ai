@@ -18,7 +18,7 @@ categories = [
 if __name__ == "__main__":
     mongo_config = MongoDBConfig(
         connection_string="mongodb://localhost:27017/",
-        database_name="fsd50k_db",
+        database_name="music_ai",
         audio_collection="audio_samples",
         fs_collection="audio_files"
     )
