@@ -15,7 +15,7 @@ class Sample(BaseModel):
 class Metadata(BaseModel):
     categories: Optional[List[str]] = Field(None, description="Categorie musicali")
     key: Optional[str] = Field(None, description="Tonalità musicale")
-    bpm: Optional[int] = Field(None, description="Battiti per minuto")
+    bpm: Optional[str] = Field(None, description="Battiti per minuto")
     duration: Optional[str] = Field(None, description="Durata nel formato HH:MM:SS")
     split: Optional[str] = Field(None, description="Suddivisione del dataset: dev, eval, etc.")
     original_split: Optional[str] = Field(None, description="Suddivisione originale del dataset: train, val, etc.")

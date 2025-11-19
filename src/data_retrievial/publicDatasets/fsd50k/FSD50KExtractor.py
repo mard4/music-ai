@@ -124,49 +124,38 @@ class FSD50KExtractor:
                     for audio_files in audio_files_list:
                         file_name = audio_files.sample.file_name
                         split = audio_files.metadata.split
+
+                        internal_path=f"FSD50K.{split}_audio_16k/{file_name}",
+                                                
+                        try:
+                            with zip_ref.open(internal_path) as source_file:
+                                audio_data = source_file.read()
+                            
+                            # Salva in GridFSBucket
+                            upload_stream = self.fs.open_upload_stream(
+                                file_name,
+                                metadata=audio_files.model_dump()
+                            )
+                            await upload_stream.write(audio_data)
+                            await upload_stream.close()
+                            
+                            file_id = upload_stream._id
+                            
+                            # Aggiorna il documento con file_id
+                            audio_files_dict = audio_files.model_dump()
+                            audio_files_dict['gridfs_file_id'] = str(file_id)
+                            
+                            # Inserisci in MongoDB
+                            await self.repository.insert_audio_file(AudioFiles(**audio_files_dict))
+                            
+                            extracted_count += 1
+                            pbar.update(1)
+                            
+                        except Exception as e:
+                            logging.debug(f"Errore estrazione {file_name}: {e}")
+                            continue
                         
-                        possible_paths = [
-                            f"fsd50k/FSD50K.{split}_audio_16k/{file_name}",
-                            f"FSD50K.{split}_audio_16k/{file_name}",
-                            file_name
-                        ]
-                        
-                        file_extracted = False
-                        for internal_path in possible_paths:
-                            if internal_path in zip_contents:
-                                try:
-                                    with zip_ref.open(internal_path) as source_file:
-                                        audio_data = source_file.read()
-                                    
-                                    # Salva in GridFSBucket
-                                    upload_stream = self.fs.open_upload_stream(
-                                        file_name,
-                                        metadata=audio_files.model_dump()
-                                    )
-                                    await upload_stream.write(audio_data)
-                                    await upload_stream.close()
-                                    
-                                    file_id = upload_stream._id
-                                    
-                                    # Aggiorna il documento con file_id
-                                    audio_files_dict = audio_files.model_dump()
-                                    audio_files_dict['gridfs_file_id'] = str(file_id)
-                                    
-                                    # Inserisci in MongoDB
-                                    await self.repository.insert_audio_file(AudioFiles(**audio_files_dict))
-                                    
-                                    extracted_count += 1
-                                    file_extracted = True
-                                    break
-                                    
-                                except Exception as e:
-                                    logging.debug(f"Errore estrazione {file_name}: {e}")
-                                    continue
-                        
-                        if not file_extracted:
-                            logging.warning(f"File non trovato: {file_name}")
-                        
-                        pbar.update(1)
+
 
             logging.info(f"Estratti {extracted_count}/{len(audio_files_list)} file")
             return extracted_count > 0

@@ -6,14 +6,25 @@ import time
 from privacy_utils import get_random_user_agent, HumanBehavior, RateLimiter
 from metadata import extract_sample_metadata
 from typing import List, Dict
-import random
 from pathlib import Path
+import logging
+from commons.data_models.models import MongoDBConfig
+from commons.data_models.audio_models import Metadata, AudioFiles, Sample
+from commons.mongo_repositories import MongoAudioFilesRepository
+from commons.mongo_dependecies import get_mongo_client, get_mongo_database, get_audiofiles_collection
+import asyncio
+from motor.motor_asyncio import AsyncIOMotorGridFSBucket
+
+logging.basicConfig(level=logging.DEBUG, format="%(levelname)s:%(name)s:%(message)s")
+logging.getLogger('pymongo').setLevel(logging.WARNING)
 
 class SampleFocusExtractor:
-    def __init__(self):
+    def __init__(self, repository: MongoAudioFilesRepository = None, fs_bucket = None):
         self.scraper = cloudscraper.create_scraper()
         self.human_behavior = HumanBehavior()
         self.rate_limiter = RateLimiter()
+        self.repository = repository
+        self.fs_bucket = fs_bucket
         
     def get_download_headers(self, referer_url):
         """Headers specifici per il download MP3"""
@@ -31,11 +42,8 @@ class SampleFocusExtractor:
         }
     
     def extract_mp3_url(self, url):
-        """Estrae URL MP3 dalla pagina - versione semplificata e efficace"""
         try:
-            print(f"🔍 Analizzando: {url}")
             response = self.scraper.get(url)
-            print(f"📄 Status Code: {response.status_code}")
             
             if response.status_code == 200:
                 patterns = [
@@ -61,97 +69,124 @@ class SampleFocusExtractor:
                     print(f"URL: {mp3_url}")
                     return mp3_url
                 
-                print("❌ Nessun URL MP3 trovato")
+                logging.debug("Nessun URL MP3 trovato")
                 
             else:
-                print(f"❌ Errore HTTP: {response.status_code}")
+                logging.debug(f"Errore HTTP: {response.status_code}")
                 
         except Exception as e:
-            print(f"❌ Errore nell'estrazione: {e}")
+            logging.debug(f"Errore nell'estrazione: {e}")
             
         return None
 
-    def download_file(self, mp3_url, page_url, output_dir="downloads"):
-        """Scarica il file MP3 - versione semplificata e funzionante"""
+    async def download_and_save_to_mongo(self, mp3_url, page_url, metadata: Dict) -> bool:
+        """Scarica e salva direttamente in MongoDB invece che su filesystem"""
         try:
-            # Crea directory se non esiste
-            os.makedirs(output_dir, exist_ok=True)
-            
-            # Genera nome file
+            if not self.repository or not self.fs_bucket:
+                logging.error("Repository MongoDB non inizializzato")
+                return False
+
             sample_name = page_url.split('/')[-1]
             filename = f"{sample_name}.mp3"
-            filepath = os.path.join(output_dir, filename)
             
-            print(f"⬇️ Scaricando: {filename} da: {mp3_url}")
+            logging.info(f" Scaricando e salvando in MongoDB: {filename}")
             
             headers = self.get_download_headers(page_url)
             
-            # Fai la richiesta
-            response = requests.get(
-                mp3_url, 
-                headers=headers, 
-                stream=True, 
-                timeout=30
-            )
-            
-            print(f"Download Status: {response.status_code}")
+            # Scarica il file
+            response = requests.get(mp3_url, headers=headers, stream=True, timeout=30)
             
             if response.status_code == 200:
-                total_size = 0
-                with open(filepath, 'wb') as f:
-                    for chunk in response.iter_content(chunk_size=8192):
-                        if chunk:
-                            f.write(chunk)
-                            total_size += len(chunk)
+                # Leggi i dati audio
+                audio_data = b""
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        audio_data += chunk
                 
-                file_size_mb = total_size / (1024 * 1024)
-                print(f"Download completato: {filename} ({file_size_mb:.2f} MB)")
+                # Crea i modelli Pydantic
+                sample_obj = Sample(
+                    file_name=filename,
+                    file_type="mp3", 
+                    label=metadata.get('title', ''),
+                    source="samplefocus"
+                )
+                
+                metadata_obj = Metadata(
+                    categories=metadata.get('categories', []),
+                    bpm=metadata.get('bpm'),
+                    duration=metadata.get('duration'),
+                    key=metadata.get('key')
+                    # Aggiungi altri campi metadata che estrai
+                )
+                
+                audio_files = AudioFiles(
+                    sample=sample_obj,
+                    metadata=metadata_obj
+                )
+                
+                # Salva in GridFSBucket
+                upload_stream = self.fs_bucket.open_upload_stream(
+                    filename,
+                    metadata=audio_files.model_dump()
+                )
+                await upload_stream.write(audio_data)
+                await upload_stream.close()
+                
+                file_id = upload_stream._id
+                
+                # Aggiorna il documento con file_id
+                audio_files_dict = audio_files.model_dump()
+                audio_files_dict['gridfs_file_id'] = str(file_id)
+                
+                # Inserisci in MongoDB
+                await self.repository.insert_audio_file(AudioFiles(**audio_files_dict))
+                
+                file_size_mb = len(audio_data) / (1024 * 1024)
+                logging.info(f"Salvato in MongoDB: {filename} ({file_size_mb:.2f} MB)")
                 return True
             else:
-                print(f"❌ Errore nel download: Status {response.status_code}")
+                logging.error(f"Errore nel download: Status {response.status_code}")
                 return False
-            
+                
         except Exception as e:
-            print(f"❌ Errore nel download: {e}")
+            logging.error(f"Errore nel download/salvataggio MongoDB: {e}")
             return False
     
-    def process_single_sample(self, page_url, output_dir="downloads"):
-        """Processa un singolo sample"""
-        print(f"\n🎵 Processing: {page_url}")
         
-        # Estrai URL MP3
+    async def process_single_sample(self, page_url) -> bool:
+        """Processa un singolo sample"""
+        logging.info(f"\n Processing: {page_url}")
+        
         mp3_url = self.extract_mp3_url(page_url)
         
         if mp3_url:
-            # Download diretto
-            success = self.download_file(mp3_url, page_url, output_dir)
-            if success:
-                # Estrai e salva i metadati
-                metadata = extract_sample_metadata(page_url, self.scraper)
-                if metadata:
-                    sample_name = page_url.split('/')[-1]
-                    self.save_metadata(metadata, output_dir, sample_name)
-            return True
+            # Estrai metadati
+            metadata = extract_sample_metadata(page_url, self.scraper)
+            logging.debug(f"Metadati estratti: {metadata}")
+            if metadata:
+                # Scarica e salva in MongoDB
+                success = await self.download_and_save_to_mongo(mp3_url, page_url, metadata)
+                return success
+            else:
+                logging.error("Impossibile estrarre metadati")
+                return False
         else:
-            print("❌ Impossibile procedere con il download")
+            logging.error("Impossibile trovare URL MP3")
             return False
     
-    def process_multiple_samples(self, url_list, output_dir="downloads",delay=3):
-        """Processa multipli samples"""
+    async def process_multiple_samples(self, url_list) -> List[bool]:
+        """Processa multipli samples e salva in MongoDB"""
         results = []
         
         for i, url in enumerate(url_list, 1):
-            print(f"🎵 Processing {i}/{len(url_list)}: {url}")
+            logging.info(f"Processing {i}/{len(url_list)}: {url}")
             
-            # Ensure we are passing only the URL string, not a tuple
-            success = self.process_single_sample(url, output_dir)
-            results.append((url, success))
+            success = await self.process_single_sample(url)
+            results.append(success)
             
-            # Aspetta tra i download
             if i < len(url_list):
-                delay = random.uniform(2, 5)
-                print(f"⏳ Attesa di {delay:.1f} secondi...")
-                time.sleep(delay)
+                wait_time = self.human_behavior.random_delay() 
+                time.sleep(wait_time)
         
         return results
     
@@ -161,10 +196,10 @@ class SampleFocusExtractor:
         sample_urls = []
         
         try:
-            print(f"📄 Estraendo samples da: {list_url}")
+            logging.info(f"Estraendo samples da: {list_url}")
             response = self.scraper.get(list_url)
             if response.status_code != 200:
-                print(f"❌ Errore nell'accedere alla lista: {response.status_code}")
+                logging.error(f"Errore nell'accedere alla lista: {response.status_code}")
                 return sample_urls
 
             # Pattern per trovare links ai samples individuali
@@ -178,14 +213,14 @@ class SampleFocusExtractor:
             # Filtra ulteriormente: solo URL che hanno il formato corretto (escludi altri percorsi)
             sample_urls = [url for url in unique_urls if re.match(r'https://samplefocus\.com/samples/[a-zA-Z0-9-]+$', url)]
             
-            print(f"📋 Trovati {len(sample_urls)} samples unici")
+            logging.info(f"Trovati {len(sample_urls)} samples unici")
             
             # Se vogliamo gestire paginazione, possiamo cercare il link alla prossima pagina
             # Ma per ora restituiamo solo la prima pagina
             return sample_urls
 
         except Exception as e:
-            print(f"❌ Errore nell'estrazione della lista: {e}")
+            logging.error(f"Errore nell'estrazione della lista: {e}")
             return []
         
         
@@ -195,13 +230,22 @@ class SampleFocusExtractor:
         filepath = os.path.join(output_dir, f"{filename}.json")
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(metadata, f, indent=2, ensure_ascii=False)
-        print(f"💾 Metadati salvati in: {filepath}")
+        logging.info(f"Metadati salvati in: {filepath}")
 
-def download_by_category(category_url, max_samples=10, output_dir="category_downloads"):
-    """Scarica samples da una categoria specifica"""
-    automator = SampleFocusExtractor()
+async def download_by_category_to_mongo(category_url: str, max_samples: int = 10, 
+                                      mongo_config: MongoDBConfig = None) -> List[bool]:
+    """Scarica samples da una categoria specifica e salva in MongoDB"""
     
-    print(f"🎯 Scaricando dalla categoria: {category_url}")
+    # Inizializza MongoDB
+    client = get_mongo_client()
+    db = get_mongo_database(client)
+    fs_bucket = AsyncIOMotorGridFSBucket(db, bucket_name=mongo_config.fs_collection)
+    collection = get_audiofiles_collection(db)
+    repository = MongoAudioFilesRepository(collection)
+    
+    automator = SampleFocusExtractor(repository, fs_bucket)
+    
+    logging.info(f"Scaricando dalla categoria: {category_url}")
     
     # Estrai URLs dalla pagina della categoria
     sample_urls = automator.extract_from_sample_list(category_url)
@@ -209,11 +253,25 @@ def download_by_category(category_url, max_samples=10, output_dir="category_down
     if sample_urls:
         # Limita il numero di samples
         sample_urls = sample_urls[:max_samples]
-        print(f"🎵 Scaricando {len(sample_urls)} samples...")
+        logging.info(f"Scaricando {len(sample_urls)} samples in MongoDB...")
         
-        results = automator.process_multiple_samples(sample_urls, output_dir, delay=4)
+        results = await automator.process_multiple_samples(sample_urls)
+        
+        # Chiudi connessione
+        client.close()
+        
         return results
     else:
-        print("❌ Nessun sample trovato in questa categoria")
+        logging.error("Nessun sample trovato in questa categoria")
+        client.close()
         return []
 
+async def create_samplefocus_extractor(mongo_config: MongoDBConfig) -> SampleFocusExtractor:
+    """Factory per creare SampleFocusExtractor con dipendenze MongoDB"""
+    client = get_mongo_client()
+    db = get_mongo_database(client)
+    fs_bucket = AsyncIOMotorGridFSBucket(db, bucket_name=mongo_config.fs_collection)
+    collection = get_audiofiles_collection(db)
+    repository = MongoAudioFilesRepository(collection)
+    
+    return SampleFocusExtractor(repository, fs_bucket)
