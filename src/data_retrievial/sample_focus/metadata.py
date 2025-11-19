@@ -51,20 +51,48 @@ def extract_sample_metadata(url: str, session=None) -> Optional[Dict]:
 def _extract_title(soup: BeautifulSoup) -> Optional[str]:
     """Estrae il titolo del sample."""
     try:
-        # Prova diversi selettori possibili per il titolo
+        # Prova diversi selettori possibili per il titolo di SampleFocus
         title_selectors = [
-            "h1.sample-title",
+            "h1[class*='title']",
+            "h1[class*='sample']",
+            ".sample-header h1",
+            ".page-title h1",
             "h1.title",
-            ".sample-title",
-            "h1"
+            "h1.sample-title",
+            "h1",
+            # Selettori specifici per SampleFocus
+            "h1.text-2xl",  # Spesso usano classi Tailwind
+            "h1.text-3xl",
+            "h1.font-bold",
+            ".text-2xl.font-bold",  # Combinazione comune
+            "[data-testid='sample-title']",  # Se usano data attributes
         ]
         
         for selector in title_selectors:
             title_elem = soup.select_one(selector)
             if title_elem:
-                return title_elem.get_text().strip()
+                title_text = title_elem.get_text().strip()
+                if title_text and len(title_text) > 1:  # Evita titoli vuoti o singoli caratteri
+                    return title_text
+        
+        # Fallback: cerca nel meta tag og:title
+        meta_title = soup.find('meta', property='og:title')
+        if meta_title and meta_title.get('content'):
+            return meta_title['content'].strip()
+            
+        # Fallback: cerca nel title della pagina
+        page_title = soup.find('title')
+        if page_title:
+            title_text = page_title.get_text().strip()
+            # Pulisci il titolo della pagina (rimuovi " - SampleFocus" etc.)
+            if 'samplefocus' in title_text.lower():
+                title_text = title_text.split(' - ')[0].split(' | ')[0]
+            if title_text and len(title_text) > 1:
+                return title_text
+                
         return None
-    except:
+    except Exception as e:
+        print(f"Errore nell'estrazione del titolo: {e}")
         return None
 
 def _extract_metadata_from_attrs(soup: BeautifulSoup) -> Dict:

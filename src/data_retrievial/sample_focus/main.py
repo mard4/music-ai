@@ -1,30 +1,28 @@
-from SampleFocusExtractor import SampleFocusExtractor, download_by_category
+from SampleFocusExtractor import SampleFocusExtractor, download_by_category_to_mongo
+from commons.data_models.models import MongoDBConfig
 
-def main():
-    automator = SampleFocusExtractor()
+async def main():
+    mongo_config = MongoDBConfig(
+        connection_string="mongodb://localhost:27017/",
+        database_name="music_ai",
+        audio_collection="audio_samples",
+        fs_collection="audio_files"
+    )
     
-    # Configurazione
-    OUTPUT_DIR = "./data/downloads"
     categories = {
-        "bass": "https://samplefocus.com/categories/bass",
-        "vocals": "https://samplefocus.com/categories/vocals",
-        "drums": "https://samplefocus.com/categories/drums", 
-        "synths": "https://samplefocus.com/categories/synths",
-    }
-    
-    sample_urls = download_by_category(categories["drums"], max_samples=5, output_dir=OUTPUT_DIR)
-    # se download_by_category ha già processato e restituito (url, success), prendi solo gli URL
-    if sample_urls and isinstance(sample_urls[0], tuple):
-        sample_urls = [u for u, _ in sample_urls]
-    results = automator.process_multiple_samples(sample_urls, OUTPUT_DIR)
-    
-    # Riepilogo
-    print("\n📊 RIEPILOGO DOWNLOAD:")
-    success_count = sum(1 for _, success in results if success)
-    print(f"✅ Successi: {success_count}/{len(results)}")
-    print(f"❌ Falliti: {len(results) - success_count}/{len(results)}")
+            "bass": "https://samplefocus.com/categories/bass",
+            "vocals": "https://samplefocus.com/categories/vocals",
+            "drums": "https://samplefocus.com/categories/drums", 
+            "synths": "https://samplefocus.com/categories/synths",
+        }
+    automator = SampleFocusExtractor()
 
+    results = await download_by_category_to_mongo(
+        category_url=categories["drums"],
+        max_samples=1,
+        mongo_config=mongo_config
+    )
 
 if __name__ == "__main__":
-    import random
-    main()
+    import asyncio
+    asyncio.run(main())
