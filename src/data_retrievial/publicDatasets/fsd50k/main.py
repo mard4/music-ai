@@ -2,7 +2,7 @@
 from FSD50KExtractor import FSD50KExtractor, MongoDBConfig, full_pipeline_mongo
 from pathlib import Path
 
-DATA_DIR = Path("data").resolve()
+DATA_DIR = Path("src/data").resolve()
 FSD50K_ZIP =  DATA_DIR / "audios" / "fsd50k.zip"
 
 categories = [

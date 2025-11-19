@@ -16,7 +16,7 @@ from commons.mongo_dependecies import get_mongo_client, get_mongo_database, get_
 logging.basicConfig(level=logging.DEBUG, format="%(levelname)s:%(name)s:%(message)s")
 logging.getLogger('pymongo').setLevel(logging.WARNING)
 
-class FSD50KExtractorMongo:
+class FSD50KExtractor:
     def __init__(self, data_dir: Path, repository: MongoAudioFilesRepository, fs):
         self.data_dir = data_dir
         self.fs = fs
@@ -107,12 +107,13 @@ class FSD50KExtractorMongo:
         logging.info(f"Creati {len(audio_files_list)} campioni audio")
         return audio_files_list
 
+    
     async def extract_and_save_audio(self, audio_files_list: List[AudioFiles]) -> bool:
-        
         try:
-            
-            for gridfs_file in self.fs.find():
-                self.fs.delete(gridfs_file._id)
+            # Pulisci GridFS - metodo corretto per GridFSBucket
+            cursor = self.fs.find()
+            async for gridfs_file in cursor:
+                await self.fs.delete(gridfs_file._id)
 
             extracted_count = 0
             with zipfile.ZipFile(self.data_dir, 'r') as zip_ref:
@@ -137,16 +138,19 @@ class FSD50KExtractorMongo:
                                     with zip_ref.open(internal_path) as source_file:
                                         audio_data = source_file.read()
                                     
-                                    # Salva in GridFS
-                                    file_id = self.fs.put(
-                                        audio_data,
-                                        filename=file_name,
-                                        metadata=audio_files.dict()
+                                    # Salva in GridFSBucket
+                                    upload_stream = self.fs.open_upload_stream(
+                                        file_name,
+                                        metadata=audio_files.model_dump()
                                     )
+                                    await upload_stream.write(audio_data)
+                                    await upload_stream.close()
+                                    
+                                    file_id = upload_stream._id
                                     
                                     # Aggiorna il documento con file_id
-                                    audio_files_dict = audio_files.dict()
-                                    audio_files_dict['gridfs_file_id'] = file_id
+                                    audio_files_dict = audio_files.model_dump()
+                                    audio_files_dict['gridfs_file_id'] = str(file_id)
                                     
                                     # Inserisci in MongoDB
                                     await self.repository.insert_audio_file(AudioFiles(**audio_files_dict))
@@ -195,15 +199,18 @@ class FSD50KExtractorMongo:
             logging.error(f"Errore pipeline: {e}")
             return False
     
-async def create_fsd50k_extractor(data_dir: Path, mongo_config: MongoDBConfig) -> FSD50KExtractorMongo:
+async def create_fsd50k_extractor(data_dir: Path, mongo_config: MongoDBConfig) -> FSD50KExtractor:
+    from motor.motor_asyncio import AsyncIOMotorGridFSBucket
+
     """Factory per creare l'extractor con le dipendenze già iniettate"""
     client = get_mongo_client()
     db = get_mongo_database(client)
-    fs = gridfs.GridFS(db, collection=mongo_config.fs_collection)
+    fs = AsyncIOMotorGridFSBucket(db, collection=mongo_config.fs_collection)  # GridFS asincrono
+
     collection = get_audiofiles_collection(db)
     repository = MongoAudioFilesRepository(collection)
     
-    return FSD50KExtractorMongo(data_dir, repository, fs)
+    return FSD50KExtractor(data_dir, repository, fs)
 
 async def full_pipeline_mongo_async(data_dir: Path, mongo_config: MongoDBConfig, 
                                    categories: List[str], max_samples: int = 100) -> bool:

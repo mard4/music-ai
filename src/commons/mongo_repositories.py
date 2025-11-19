@@ -9,9 +9,9 @@ from datetime import datetime, timezone
 from motor.motor_asyncio import AsyncIOMotorCollection
 from bson import ObjectId
 
-from state_persistent_storage import AudioFilesRepository
-from mongo_dependecies import get_audiofiles_collection
-from data_models.audio_models import Sample, AudioFiles, Metadata
+from commons.state_persistent_storage import AudioFilesRepository
+from commons.mongo_dependecies import get_audiofiles_collection
+from commons.data_models.audio_models import Sample, AudioFiles, Metadata
 
 class MongoAudioFilesRepository(AudioFilesRepository):
 
