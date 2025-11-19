@@ -124,14 +124,18 @@ class FSD50KExtractor:
                     for audio_files in audio_files_list:
                         file_name = audio_files.sample.file_name
                         split = audio_files.metadata.split
-
-                        internal_path=f"FSD50K.{split}_audio_16k/{file_name}",
-                                                
+                        
+                        if split == 'dev':
+                            internal_path = f"FSD50K.dev_audio_16k/{file_name}"
+                        else:  # eval
+                            internal_path = f"FSD50K.eval_audio/{file_name}"               
+                        
                         try:
                             with zip_ref.open(internal_path) as source_file:
                                 audio_data = source_file.read()
                             
                             # Salva in GridFSBucket
+                            print("Internal path:", internal_path)
                             upload_stream = self.fs.open_upload_stream(
                                 file_name,
                                 metadata=audio_files.model_dump()
