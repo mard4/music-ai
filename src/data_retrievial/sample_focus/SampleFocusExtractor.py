@@ -115,8 +115,8 @@ class SampleFocusExtractor:
                     categories=metadata.get('categories', []),
                     bpm=metadata.get('bpm'),
                     duration=metadata.get('duration'),
-                    key=metadata.get('key')
-                    # Aggiungi altri campi metadata che estrai
+                    key=metadata.get('key'),
+                    #title=metadata.get('title')
                 )
                 
                 audio_files = AudioFiles(
