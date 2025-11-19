@@ -1,11 +1,11 @@
 venv
 venvmusic
-data/audios
-data/daws
-data/downloads'
-data/plugins
-data_retrievial/sample_focus/sample_focus_data_retrievial_simplescript.py
-
+src/data/audios
+src/data/daws
+src/data/downloads'
+src/data/plugins
+src/data_retrievial/sample_focus/sample_focus_data_retrievial_simplescript.py
+mongo_data
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

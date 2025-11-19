@@ -1,0 +1,3 @@
+"""
+Modelli Pydantic
+"""
