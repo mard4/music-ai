@@ -9,8 +9,8 @@ from datetime import datetime, timezone
 from motor.motor_asyncio import AsyncIOMotorCollection
 from bson import ObjectId
 
-from commons.state_persistent_storage import AudioFilesRepository
-from commons.mongo_dependecies import get_audiofiles_collection
+from commons.interfaces import AudioFilesRepository
+from commons.mongodb.mongo_dependecies import get_audiofiles_collection
 from commons.data_models.audio_models import Sample, AudioFiles, Metadata
 
 class MongoAudioFilesRepository(AudioFilesRepository):
@@ -38,6 +38,26 @@ class MongoAudioFilesRepository(AudioFilesRepository):
         
         result = await self.collection.insert_one(audio_dict)
         return str(result.inserted_id)
+
+    async def update_audio_file(self, audio_id: str, update_data: dict) -> bool:
+        """
+        Update an existing audio file document.
+        
+        Args:
+            audio_id: ID of the document to update
+            update_data: Dictionary containing fields to update
+            
+        Returns:
+            True if update was successful, False otherwise
+        """
+        try:
+            result = await self.collection.update_one(
+                {"_id": ObjectId(audio_id)},
+                {"$set": update_data}
+            )
+            return result.modified_count > 0
+        except Exception:
+            return False
 
     async def find_audio_by_filter(
         self,

@@ -50,7 +50,7 @@ class AudioFeatureExtractor:
         
         return features
 
-    def generate_technical_description(self, features: dict) -> str:
+    def generate_technical_description(self, features: dict) -> list:
         """Genera una descrizione tecnica basata sulle features audio."""
         
         desc = []
@@ -76,9 +76,9 @@ class AudioFeatureExtractor:
         if zcr > 0.1:
             desc.append("high noise content")
         
-        return ", ".join(desc)
+        return desc
 
-    def generate_semantic_description(self, features: dict) -> str:
+    def generate_semantic_description(self, features: dict) -> list:
         """Genera una descrizione semantica basata sulle features audio."""
         
         desc = []
@@ -111,7 +111,7 @@ class AudioFeatureExtractor:
         else:
             desc.append("clean")
         
-        return ", ".join(desc)
+        return desc
     
     def create_descriptions(self, audio_path: Path) -> list:
         """Estrae features e genera descrizioni tecniche e semantiche."""
@@ -120,8 +120,11 @@ class AudioFeatureExtractor:
         if features is None:
             return None
         
-        technical_desc = self.generate_technical_description(features)
-        semantic_desc = self.generate_semantic_description(features)
+        technical_desc_list = self.generate_technical_description(features)
+        semantic_desc_list = self.generate_semantic_description(features)
+        
+        technical_desc = ", ".join(technical_desc_list)
+        semantic_desc = ", ".join(semantic_desc_list)
         
         file_descriptions = [
                 f"Sound with {technical_desc}",

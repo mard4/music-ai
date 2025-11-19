@@ -27,9 +27,12 @@ class FileAudio(BaseModel):
 class AudioFiles(BaseModel):
     sample: Sample
     metadata: Metadata
+    gridfs_file_id: Optional[str] = Field(None, description="ID del file in GridFS")
 
-class EnrichedAudioFile(Sample):
+class EnrichedAudioFile(AudioFiles):
     text_description: Optional[List[str]] = Field(None, description="Descrizioni testuali")
     technical_description: Optional[List[str]] = Field(None, description="Descrizioni tecniche")
     semantic_description: Optional[List[str]] = Field(None, description="Descrizioni semantiche")
     spectral_centroid: Optional[float] = Field(None, description="Centroide spettrale")
+    rms: Optional[float] = Field(None, description="Root Mean Square energy")
+    duration: Optional[float] = Field(None, description="Durata in secondi")

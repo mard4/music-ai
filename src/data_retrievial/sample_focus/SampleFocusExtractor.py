@@ -10,8 +10,8 @@ from pathlib import Path
 import logging
 from commons.data_models.models import MongoDBConfig
 from commons.data_models.audio_models import Metadata, AudioFiles, Sample
-from commons.mongo_repositories import MongoAudioFilesRepository
-from commons.mongo_dependecies import get_mongo_client, get_mongo_database, get_audiofiles_collection
+from commons.mongodb.mongo_repositories import MongoAudioFilesRepository
+from commons.mongodb.mongo_dependecies import get_mongo_client, get_mongo_database, get_audiofiles_collection
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorGridFSBucket
 
