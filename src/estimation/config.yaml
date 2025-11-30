@@ -1,0 +1,20 @@
+training:
+  optimizer:
+    type: "AdamW"
+    lr: 1e-4
+    weight_decay: 0.1
+  
+  scheduler:
+    type: "CosineAnnealingLR" 
+    T_max: 1000
+  
+  mixed_precision: true
+  
+  criterion: "CrossEntropyLoss"
+  
+  epochs: 10
+
+  finetune:
+    optimizer:
+      type: "AdamW"
+      lr: 1e-5
