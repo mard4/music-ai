@@ -18,11 +18,14 @@ async def main():
     automator = SampleFocusExtractor()
 
     results = await download_by_category_to_mongo(
-        category_url=categories["drums"],
-        max_samples=1,
+        category_url=categories["bass"],
+        max_samples=20,
         mongo_config=mongo_config
     )
 
 if __name__ == "__main__":
     import asyncio
     asyncio.run(main())
+    
+    
+    

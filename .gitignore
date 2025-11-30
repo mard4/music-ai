@@ -1,5 +1,7 @@
 venv
 venvmusic
+data/
+src/data/
 src/data/audios
 src/data/daws
 src/data/downloads'

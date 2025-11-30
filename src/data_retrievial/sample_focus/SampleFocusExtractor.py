@@ -138,7 +138,6 @@ class SampleFocusExtractor:
                 audio_files_dict = audio_files.model_dump()
                 audio_files_dict['gridfs_file_id'] = str(file_id)
                 
-                # Inserisci in MongoDB
                 await self.repository.insert_audio_file(AudioFiles(**audio_files_dict))
                 
                 file_size_mb = len(audio_data) / (1024 * 1024)
