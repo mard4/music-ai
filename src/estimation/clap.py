@@ -16,8 +16,11 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # TODO: split train / val / test
-# TODO: augmentations???
-#TODO: 
+# TODO: script per inference
+# TODO: logging con wandb 
+# TODO: salvare checkpoint durante il training
+# TODO: REGULARIZATION: early stopping, weight decay, dropout, data augmentation
+
 
 
 def get_clap_dataset() -> CLAPAudioDataset:
