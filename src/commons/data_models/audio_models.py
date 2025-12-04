@@ -19,6 +19,7 @@ class Metadata(BaseModel):
     duration: Optional[str] = Field(None, description="Durata nel formato HH:MM:SS")
     split: Optional[str] = Field(None, description="Suddivisione del dataset: dev, eval, etc.")
     original_split: Optional[str] = Field(None, description="Suddivisione originale del dataset: train, val, etc.")
+    main_category: str = Field(None, description="Main category eg. Bass, Synth")
 
 class FileAudio(BaseModel):
     file_name: str = Field(..., description="Nome del file")

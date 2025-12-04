@@ -165,6 +165,7 @@ def get_clap_dataset() -> CLAPAudioDataset:
     return asyncio.run(create_processor_extractor(mongo_config))
 
 def stratify_category(dataset):
+    ## la categoria é in metadati --> main_category
     try:
         # Prova a estrarre la categoria principale dal label
         categories = []

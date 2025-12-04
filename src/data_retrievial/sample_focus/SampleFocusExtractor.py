@@ -19,12 +19,14 @@ logging.basicConfig(level=logging.DEBUG, format="%(levelname)s:%(name)s:%(messag
 logging.getLogger('pymongo').setLevel(logging.WARNING)
 
 class SampleFocusExtractor:
-    def __init__(self, repository: MongoAudioFilesRepository = None, fs_bucket = None):
+    def __init__(self, repository: MongoAudioFilesRepository = None, fs_bucket = None, category_url: str =None):
         self.scraper = cloudscraper.create_scraper()
         self.human_behavior = HumanBehavior()
         self.rate_limiter = RateLimiter()
         self.repository = repository
         self.fs_bucket = fs_bucket
+        self.category_url = category_url
+
         
     def get_download_headers(self, referer_url):
         """Headers specifici per il download MP3"""
@@ -116,6 +118,7 @@ class SampleFocusExtractor:
                     bpm=metadata.get('bpm'),
                     duration=metadata.get('duration'),
                     key=metadata.get('key'),
+                    main_category=self.category_url.rstrip("/").split("/")[-1]
                     #title=metadata.get('title')
                 )
                 
@@ -242,7 +245,7 @@ async def download_by_category_to_mongo(category_url: str, max_samples: int = 10
     collection = get_audiofiles_collection(db)
     repository = MongoAudioFilesRepository(collection)
     
-    automator = SampleFocusExtractor(repository, fs_bucket)
+    automator = SampleFocusExtractor(repository, fs_bucket, category_url)
     
     logging.info(f"Scaricando dalla categoria: {category_url}")
     
