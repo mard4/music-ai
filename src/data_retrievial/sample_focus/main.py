@@ -15,10 +15,9 @@ async def main():
             "drums": "https://samplefocus.com/categories/drums", 
             "synths": "https://samplefocus.com/categories/synths",
         }
-    automator = SampleFocusExtractor()
 
     results = await download_by_category_to_mongo(
-        category_url=categories["bass"],
+        category_url=categories["vocals"],
         max_samples=100,
         mongo_config=mongo_config
     )
