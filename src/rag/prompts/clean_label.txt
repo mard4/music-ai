@@ -1,28 +1,36 @@
-Sei un assistente specializzato in analisi semantica di label audio. Il tuo compito è pulire e organizzare i label esistenti senza aggiungere informazioni inventate.
+ Analizza questo file audio con le seguenti informazioni per GENERARE UN NUOVO LABEL SEMANTICO.
 
-**CONTESTO:**
-OBIETTIVO: Classificare suoni per rispondere a domande tecniche su produzione musicale.
+    ### INFORMAZIONI DISPONIBILI:
+    1. **LABEL ORIGINALE**: "{label}"
+    2. **CATEGORIE PRINCIPALI**: {categories}
+    3. **CONTESTO**: Il file appartiene a una collezione di suoni per produzione musicale (es. kick, bass, synth, drums, pads, vocal).
 
-**DATI DISPONIBILI:**
-- LABEL: "{label_input}"
-- CATEGORIES: {categories_input}
+    ### IL TUO COMPITO:
+    Genera un **nuovo label semantico** che sia **descrittivo, accurato e utile** per un produttore musicale. Segui questa strategia in 3 fasi:
 
-**ISTRUZIONI:**
+    **FASE 1: ANALISI ESTRATTIVA**
+    - Estrai **tutte le parole chiave semantiche** dal label originale (es. "dark", "punchy", "808", "analog").
+    - Identifica la **categoria principale** (es. "kick", "bass") dai metadati.
+    - Valuta se i metadati forniscono **informazioni contestuali aggiuntive** rilevanti.
 
-1. **ESTRAZIONE SEMANTICA** (solo dai dati forniti):
-   - Identifica il GENERE dall'etichetta (se presente)
-   - Identifica lo STRUMENTO/ELEMENTO sonoro
-   - Identifica le CARATTERISTICHE dalle categorie
+    **FASE 2: INTEGRAZIONE SEMANTICA**
+    - **Mantieni sempre** le qualità sonore percettive (es. "warm", "crunchy", "airy").
+    - **Mantieni sempre** le riferimenti tecnici o culturali specifici (es. "808", "TB-303", "vinyl").
+    - **Combina** queste informazioni con la categoria identificata.
+    - **Se utile**, arricchisci con aggettivi contestuali appropriati (es. per un "kick" potrebbero essere "punchy", "deep", "boomy").
 
-2. **PULIZIA FORMATO**:
-   - Rimuovi duplicati
-   - Standardizza maiuscole/minuscole
-   - Unisci termini equivalenti
+    **FASE 3: FORMULAZIONE**
+    - Struttura il nuovo label nel formato: `[CATEGORIA] + [DESCRITTORI SEMANTICI] + [SPECIFICHE TECNICHE/CULTURALI]`
+    - Usa un linguaggio naturale e conciso tipico delle librerie audio professionali.
+    - **Priorità assoluta**: La descrizione deve catturare *come il suono viene percepito* piuttosto che solo cosa è.
 
-3. **ORGANIZZAZIONE GERARCHICA**:
-   - Genere musicale
-   - Elemento sonoro (strumento/tipo suono)
-   - Caratteristiche descrittive
-   - Qualità tecniche (se presenti nelle categorie)
+    ### ESEMPI DI TRASFORMAZIONE:
+    - Input: `"Kick 01"`, Categorie: `["kick", "drum"]` → Output: `"Punchy Acoustic Kick Drum"`
+    - Input: `"Dark Bass"`, Categorie: `["bass", "synth"]` → Output: `"Dark Analog Synth Bass with Sub Frequency"`
+    - Input: `"Synth Pad Chord"`, Categorie: `["pad", "synth"]` → Output: `"Warm Atmospheric Synth Pad with Long Release"`
 
+    ## REGOLE
+    Non inventare informazioni che non sono presenti nei metadati o nei labels
 
+    ### OUTPUT FINALE:
+    Fornisci SOLO il nuovo label pulito, senza virgolette, punti o spiegazioni aggiuntive.

@@ -19,7 +19,7 @@ async def main():
 
     results = await download_by_category_to_mongo(
         category_url=categories["bass"],
-        max_samples=20,
+        max_samples=100,
         mongo_config=mongo_config
     )
 
