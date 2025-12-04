@@ -119,6 +119,18 @@ class MongoAudioFilesRepository(AudioFilesRepository):
         except Exception:
             return None
 
+    async def get_clean_label(self, audio_id: str) -> Optional[AudioFiles]:
+        """
+        Get audio file by ID.
+
+        Args:
+            audio_id: Audio file ID
+
+        Returns:
+            Audio file document or None
+        """
+        pass
+
 @lru_cache(maxsize=1)
 def get_audio_files_repository(
     collection: AsyncIOMotorCollection = Depends(get_audiofiles_collection)
