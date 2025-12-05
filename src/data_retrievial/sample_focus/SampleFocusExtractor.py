@@ -316,17 +316,6 @@ async def download_by_category_to_mongo(category_url: str, max_samples: int = 10
 async def create_samplefocus_extractor(mongo_config: dict = None) -> SampleFocusExtractor:
     """Factory per creare SampleFocusExtractor con dipendenze MongoDB."""
 
-    # Se non viene fornita una configurazione, usa le settings di default
-    if mongo_config is None:
-        from config.settings import settings
-        mongo_config = {
-            "connection_string": settings.database.mongodb_connection_string,
-            "database_name": settings.database.mongodb_database_name,
-            "audio_collection": settings.database.mongodb_audio_collection,
-            "fs_collection": settings.database.mongodb_fs_collection,
-            "clean_labels_collection": settings.database.mongodb_clean_labels_collection
-        }
-
     client = AsyncIOMotorClient(mongo_config["connection_string"])
     db = client[mongo_config["database_name"]]
     fs_bucket = AsyncIOMotorGridFSBucket(db, bucket_name=mongo_config["fs_collection"])
