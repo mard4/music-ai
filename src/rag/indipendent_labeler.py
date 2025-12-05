@@ -105,7 +105,7 @@ async def save_clean_label_to_mongo(collection, clean_label_doc: CleanLabelDocum
 async def main():
     mongo_config = MongoDBConfig(
         connection_string=os.getenv("MONGODB_CONNECTION_STRING", "mongodb://localhost:27017/"),
-        database_name=os.getenv("MONGODB_DATABASE_NAME", "music_ai"),
+        database_name=os.getenv("MONGODB_DATABASE_NAME", "audio_db"),
         audio_collection=os.getenv("MONGODB_AUDIO_COLLECTION", "audio_samples"),
         fs_collection=os.getenv("MONGODB_FS_COLLECTION", "audio_files")
     )

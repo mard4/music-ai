@@ -1,5 +1,6 @@
 venv
-venvmusic
+venvmusic/
+.env
 data/
 src/data/
 src/data/audios
@@ -9,6 +10,10 @@ src/data/plugins
 src/data_retrievial/sample_focus/sample_focus_data_retrievial_simplescript.py
 mongo_data
 test_quality.ipynb
+checkpoints/
+src/checkpoints/
+logs/
+clap_training_log/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
