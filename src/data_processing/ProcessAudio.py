@@ -6,10 +6,17 @@ from tqdm import tqdm
 from bson import ObjectId
 import numpy as np
 from motor.motor_asyncio import AsyncIOMotorGridFSBucket, AsyncIOMotorDatabase, AsyncIOMotorCollection
-
+from motor.motor_asyncio import AsyncIOMotorClient
+from infrastructure.database.repositories import MongoAudioFilesRepository
+from config.settings import settings
 from infrastructure.database.repositories import MongoAudioFilesRepository
 from data_processing.AudioFeatureExtractor import AudioFeatureExtractor
 
+import logging
+
+logging.getLogger('pymongo').setLevel(logging.WARNING)
+logging.getLogger('numba').setLevel(logging.WARNING)
+logging.getLogger('librosa').setLevel(logging.WARNING)
 
 class AudioProcessor:
     """Processes audio files from MongoDB, extracts features, and updates metadata."""
@@ -182,22 +189,25 @@ class AudioProcessor:
         if temp_path.exists():
             os.unlink(temp_path)
 
-
-async def create_audio_processor() -> AudioProcessor:
+async def create_audio_processor(mongo_config: dict = None) -> AudioProcessor:
     """Factory to create audio processor using application settings."""
 
-    from motor.motor_asyncio import AsyncIOMotorClient
-    from infrastructure.database.repositories import MongoAudioFilesRepository
-    from config.settings import settings
+    # Se non viene fornita una configurazione, usa le settings di default
+    if mongo_config is None:
+        from config.settings import settings
+        mongo_config = {
+            "connection_string": settings.database.mongodb_connection_string,
+            "database_name": settings.database.mongodb_database_name,
+            "audio_collection": settings.database.mongodb_audio_collection,
+            "fs_collection": settings.database.mongodb_fs_collection,
+            "clean_labels_collection": settings.database.mongodb_clean_labels_collection
+        }
 
-    client = AsyncIOMotorClient(settings.database.mongodb_connection_string)
-    database = client[settings.database.mongodb_database_name]
-    gridfs_bucket = AsyncIOMotorGridFSBucket(
-        database,
-        bucket_name=settings.database.mongodb_fs_collection
-    )
-
-    collection = database[settings.database.mongodb_audio_collection]
+    client = AsyncIOMotorClient(mongo_config["connection_string"])
+    db = client[mongo_config["database_name"]]
+    gridfs_bucket = AsyncIOMotorGridFSBucket(db, bucket_name=mongo_config["fs_collection"])
+    collection = db[mongo_config["audio_collection"]]
     repository = MongoAudioFilesRepository(collection)
 
-    return AudioProcessor(repository, gridfs_bucket, database)
+    return AudioProcessor(repository, gridfs_bucket, db)
+

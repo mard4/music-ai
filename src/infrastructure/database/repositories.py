@@ -14,7 +14,8 @@ from core.interfaces.repositories import (
 from core.domain.audio import AudioFile, Sample, AudioMetadata
 
 logger = logging.getLogger(__name__)
-
+logging.basicConfig(level=logging.DEBUG, format="%(levelname)s:%(name)s:%(message)s")
+logging.getLogger('pymongo').setLevel(logging.WARNING)
 
 class MongoAudioFilesRepository(AudioFilesRepository):
     """Implementazione MongoDB per repository audio."""

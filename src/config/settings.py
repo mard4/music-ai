@@ -118,7 +118,15 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = False
-
+        extra = "allow"
 
 # Singleton instance
 settings = Settings()
+
+mongo_config = {
+    "connection_string": settings.database.mongodb_connection_string,
+    "database_name": settings.database.mongodb_database_name,
+    "audio_collection": settings.database.mongodb_audio_collection,
+    "fs_collection": settings.database.mongodb_fs_collection,
+    "clean_labels_collection": settings.database.mongodb_clean_labels_collection
+}
