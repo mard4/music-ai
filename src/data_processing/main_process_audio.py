@@ -1,17 +1,12 @@
 import asyncio
-import logging
-
-logging.getLogger('pymongo').setLevel(logging.WARNING)
-logging.getLogger('numba').setLevel(logging.WARNING)
-logging.getLogger('librosa').setLevel(logging.WARNING)
-
-from config.settings import settings
 from ProcessAudio import create_audio_processor
+from config.settings import mongo_config
+
 
 async def process_audio_files() -> None:
     """Main function to process audio files."""
 
-    processor = await create_audio_processor()
+    processor = await create_audio_processor(mongo_config=mongo_config)
 
     await processor.process_audio_files()
 

@@ -20,7 +20,8 @@ from infrastructure.database.repositories import (
 from infrastructure.storage.gridfs_handler import GridFSHandler
 
 logger = logging.getLogger(__name__)
-
+logging.basicConfig(level=logging.DEBUG, format="%(levelname)s:%(name)s:%(message)s")
+logging.getLogger('pymongo').setLevel(logging.WARNING)
 
 @lru_cache(maxsize=1)
 def get_mongo_client() -> AsyncIOMotorClient:
