@@ -7,16 +7,17 @@ from bson import ObjectId
 import numpy as np
 from motor.motor_asyncio import AsyncIOMotorGridFSBucket, AsyncIOMotorDatabase, AsyncIOMotorCollection
 from motor.motor_asyncio import AsyncIOMotorClient
-from infrastructure.database.repositories import MongoAudioFilesRepository
-from config.settings import settings
+
 from infrastructure.database.repositories import MongoAudioFilesRepository
 from data_processing.AudioFeatureExtractor import AudioFeatureExtractor
+from core.domain.audio import AudioFile, EnrichedAudioFile
 
 import logging
 
 logging.getLogger('pymongo').setLevel(logging.WARNING)
 logging.getLogger('numba').setLevel(logging.WARNING)
 logging.getLogger('librosa').setLevel(logging.WARNING)
+
 
 class AudioProcessor:
     """Processes audio files from MongoDB, extracts features, and updates metadata."""
@@ -41,11 +42,12 @@ class AudioProcessor:
         for audio_file in tqdm(audio_files, desc="Processing audio files"):
             await self._process_single_file(audio_file, enriched_collection)
 
-    async def _fetch_audio_files(self) -> List:
+    async def _fetch_audio_files(self) -> List[AudioFile]:
         """Fetch all audio files from repository."""
         return await self.repository.find_with_gridfs()
 
-    async def _process_single_file(self, audio_file, enriched_collection: AsyncIOMotorCollection) -> None:
+    async def _process_single_file(self, audio_file: AudioFile,
+                                   enriched_collection: AsyncIOMotorCollection) -> None:
         """Process a single audio file."""
 
         if not audio_file.gridfs_file_id:
@@ -76,7 +78,7 @@ class AudioProcessor:
 
     async def _extract_and_save_features(
             self,
-            audio_file,
+            audio_file: AudioFile,
             temp_path: Path,
             enriched_collection: AsyncIOMotorCollection
     ) -> None:
@@ -90,80 +92,81 @@ class AudioProcessor:
         semantic_desc = self.extractor.generate_semantic_description(features)
         text_descriptions = self.extractor.create_descriptions(temp_path)
 
-        enriched_data = self._create_enriched_data(
+        enriched_audio = self._create_enriched_audio_file(
             audio_file, features, technical_desc, semantic_desc, text_descriptions
         )
 
-        await self._save_enriched_data(enriched_data, audio_file.gridfs_file_id, enriched_collection)
+        await self._save_enriched_data(enriched_audio, enriched_collection)
 
-    def _create_enriched_data(
+    def _create_enriched_audio_file(
             self,
-            audio_file,
-            features: dict,
-            technical_desc: list,
-            semantic_desc: list,
-            text_descriptions: list
-    ) -> dict:
-        """Create enriched audio data dictionary with serializable types."""
+            audio_file: AudioFile,
+            features: Dict[str, Any],
+            technical_desc: List[str],
+            semantic_desc: List[str],
+            text_descriptions: List[str]
+    ) -> EnrichedAudioFile:
+        """Create enriched audio file object with extracted features."""
 
-        # Handle both Pydantic v1 (.dict()) and v2 (.model_dump())
-        sample_data = (
-            audio_file.sample.model_dump()
-            if hasattr(audio_file.sample, 'model_dump')
-            else audio_file.sample.dict()
-        )
-
-        metadata_data = (
-            audio_file.metadata.model_dump()
-            if hasattr(audio_file.metadata, 'model_dump')
-            else audio_file.metadata.dict()
-        )
-
-        # Convert numpy types to Python native types
+        # Converti tipi numpy a Python nativi
         spectral_centroid = features.get('spectral_centroid')
         rms = features.get('rms')
+        duration = features.get('duration')
 
-        return {
-            "sample": sample_data,
-            "metadata": metadata_data,
-            "gridfs_file_id": audio_file.gridfs_file_id,
-            "text_description": text_descriptions,
-            "technical_description": technical_desc,
-            "semantic_description": semantic_desc,
-            "spectral_centroid": (
+        # Crea l'oggetto EnrichedAudioFile
+        enriched_audio = EnrichedAudioFile(
+            sample=audio_file.sample,
+            metadata=audio_file.metadata,
+            gridfs_file_id=audio_file.gridfs_file_id,
+            text_descriptions=text_descriptions,
+            technical_descriptions=technical_desc,
+            semantic_descriptions=semantic_desc,
+            spectral_centroid=(
                 float(spectral_centroid)
                 if spectral_centroid is not None and isinstance(spectral_centroid, (np.floating, np.integer))
                 else None
             ),
-            "rms": (
+            rms_energy=(
                 float(rms)
                 if rms is not None and isinstance(rms, (np.floating, np.integer))
                 else None
             ),
-            "duration": (
-                float(features.get('duration'))
-                if features.get('duration') is not None and isinstance(features.get('duration'),
-                                                                       (np.floating, np.integer))
+            duration_seconds=(
+                float(duration)
+                if duration is not None and isinstance(duration, (np.floating, np.integer))
                 else None
             )
-        }
+        )
+
+        return enriched_audio
 
     async def _save_enriched_data(
             self,
-            enriched_data: dict,
-            gridfs_file_id: str,
+            enriched_audio: EnrichedAudioFile,
             enriched_collection: AsyncIOMotorCollection
     ) -> None:
         """Save enriched audio data to collection."""
 
-        # Ensure all values are JSON serializable
-        enriched_data = self._make_serializable(enriched_data)
+        # Converti l'oggetto EnrichedAudioFile in dizionario serializzabile
+        enriched_data = self._convert_enriched_audio_to_dict(enriched_audio)
 
         await enriched_collection.update_one(
-            {"gridfs_file_id": gridfs_file_id},
+            {"gridfs_file_id": enriched_audio.gridfs_file_id},
             {"$set": enriched_data},
             upsert=True
         )
+
+    def _convert_enriched_audio_to_dict(self, enriched_audio: EnrichedAudioFile) -> Dict[str, Any]:
+        """Convert EnrichedAudioFile object to serializable dictionary."""
+
+        # Usa model_dump per Pydantic v2 o dict per v1
+        if hasattr(enriched_audio, 'model_dump'):
+            data = enriched_audio.model_dump()
+        else:
+            data = enriched_audio.dict()
+
+        # Assicurati che tutti i valori siano serializzabili
+        return self._make_serializable(data)
 
     def _make_serializable(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Convert numpy types and other non-serializable objects to Python native types."""
@@ -176,7 +179,7 @@ class AudioProcessor:
             elif isinstance(value, np.ndarray):
                 return value.tolist()
             elif isinstance(value, list):
-                return [convert_item for convert_item in value]
+                return [convert_value(item) for item in value]
             elif isinstance(value, dict):
                 return {k: convert_value(v) for k, v in value.items()}
             else:
@@ -189,8 +192,10 @@ class AudioProcessor:
         if temp_path.exists():
             os.unlink(temp_path)
 
+
 async def create_audio_processor(mongo_config: dict = None) -> AudioProcessor:
     """Factory to create audio processor using application settings."""
+
 
     client = AsyncIOMotorClient(mongo_config["connection_string"])
     db = client[mongo_config["database_name"]]
@@ -199,4 +204,3 @@ async def create_audio_processor(mongo_config: dict = None) -> AudioProcessor:
     repository = MongoAudioFilesRepository(collection)
 
     return AudioProcessor(repository, gridfs_bucket, db)
-

@@ -9,60 +9,14 @@ import asyncio
 from typing import List, Dict, Optional
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase, AsyncIOMotorGridFSBucket
 
+from infrastructure.database.repositories import MongoAudioFilesRepository
 from privacy_utils import get_random_user_agent, HumanBehavior, RateLimiter
 from metadata import extract_sample_metadata
-
-# Modelli Pydantic locali
-from pydantic import BaseModel, Field
-from typing import Optional, List
-
-
-class Sample(BaseModel):
-    """Modello per campione audio."""
-    file_name: str = Field(..., description="Nome del file audio")
-    file_type: Optional[str] = Field(None, description="Tipo di file: mp3, wav, etc.")
-    label: str = Field(..., description="Etichetta descrittiva")
-    source: Optional[str] = Field(None, description="Origine del campione")
-
-
-class Metadata(BaseModel):
-    """Metadata per file audio."""
-    categories: Optional[List[str]] = Field(None, description="Categorie musicali")
-    key: Optional[str] = Field(None, description="Tonalità musicale")
-    bpm: Optional[str] = Field(None, description="Battiti per minuto")
-    duration: Optional[str] = Field(None, description="Durata in secondi")
-    main_category: Optional[str] = Field(None, description="Categoria principale")
-    split: Optional[str] = Field(None, description="Split del dataset")
-    original_split: Optional[str] = Field(None, description="Split originale")
-
-
-class AudioFile(BaseModel):
-    """File audio completo con metadata."""
-    sample: Sample
-    metadata: Metadata
-    gridfs_file_id: Optional[str] = Field(None, description="ID GridFS")
-
-    class Config:
-        arbitrary_types_allowed = True
-
-
+from core.domain.audio import AudioFile, AudioMetadata, EnrichedAudioFile, Sample
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logging.getLogger('pymongo').setLevel(logging.WARNING)
 logging.getLogger('urllib3').setLevel(logging.WARNING)
-
-
-class MongoAudioFilesRepository:
-    """Repository per la gestione di file audio in MongoDB."""
-
-    def __init__(self, collection):
-        self.collection = collection
-
-    async def insert_audio_file(self, audio_data: AudioFile) -> str:
-        """Inserisce un nuovo file audio."""
-        audio_dict = audio_data.model_dump()
-        result = await self.collection.insert_one(audio_dict)
-        return str(result.inserted_id)
 
 
 class SampleFocusExtractor:
@@ -159,7 +113,7 @@ class SampleFocusExtractor:
                     source="samplefocus"
                 )
 
-                metadata_obj = Metadata(
+                metadata_obj = AudioMetadata(
                     categories=metadata.get('categories', []),
                     bpm=metadata.get('bpm'),
                     duration=metadata.get('duration'),

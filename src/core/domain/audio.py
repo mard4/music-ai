@@ -18,7 +18,7 @@ class AudioMetadata(BaseModel):
     categories: Optional[List[str]] = Field(None, description="Categorie musicali")
     key: Optional[str] = Field(None, description="Tonalità musicale")
     bpm: Optional[str] = Field(None, description="Battiti per minuto")
-    duration_seconds: Optional[float] = Field(None, description="Durata in secondi")
+    duration: Optional[str] = Field(None, description="Durata in secondi")
     split: Optional[str] = Field(None, description="Split del dataset")
     original_split: Optional[str] = Field(None, description="Split originale")
     main_category: str = Field(None, description="Nome del main category")

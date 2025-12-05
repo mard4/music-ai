@@ -2,6 +2,7 @@ import librosa
 import numpy as np
 from pathlib import Path
 from typing import Dict, Optional, List
+from core.domain.audio import AudioFile, AudioMetadata, EnrichedAudioFile, Sample
 
 
 class AudioFeatureExtractor:
