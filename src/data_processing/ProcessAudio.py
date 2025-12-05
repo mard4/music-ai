@@ -192,17 +192,6 @@ class AudioProcessor:
 async def create_audio_processor(mongo_config: dict = None) -> AudioProcessor:
     """Factory to create audio processor using application settings."""
 
-    # Se non viene fornita una configurazione, usa le settings di default
-    if mongo_config is None:
-        from config.settings import settings
-        mongo_config = {
-            "connection_string": settings.database.mongodb_connection_string,
-            "database_name": settings.database.mongodb_database_name,
-            "audio_collection": settings.database.mongodb_audio_collection,
-            "fs_collection": settings.database.mongodb_fs_collection,
-            "clean_labels_collection": settings.database.mongodb_clean_labels_collection
-        }
-
     client = AsyncIOMotorClient(mongo_config["connection_string"])
     db = client[mongo_config["database_name"]]
     gridfs_bucket = AsyncIOMotorGridFSBucket(db, bucket_name=mongo_config["fs_collection"])
