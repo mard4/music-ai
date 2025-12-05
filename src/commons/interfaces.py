@@ -42,7 +42,7 @@ class AudioFilesRepository(ABC):
         source: Optional[str] = None,
         categories: Optional[List[str]] = None,
         key: Optional[str] = None,
-        bpm: Optional[int] = None,
+        bpm: Optional[str] = None,
         duration: Optional[str] = None
     ) -> List[AudioFiles]:
         """
