@@ -9,7 +9,7 @@ from motor.motor_asyncio import AsyncIOMotorGridFSBucket, AsyncIOMotorDatabase, 
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from infrastructure.database.repositories import MongoAudioFilesRepository
-from data_processing.AudioFeatureExtractor import AudioFeatureExtractor
+from data_processing.old.AudioFeatureExtractor import AudioFeatureExtractor
 from core.domain.audio import AudioFile, EnrichedAudioFile
 
 import logging
