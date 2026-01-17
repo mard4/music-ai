@@ -44,3 +44,21 @@ class EnrichedAudioFile(AudioFile):
     spectral_centroid: Optional[float] = Field(None, description="Centroide spettrale")
     rms_energy: Optional[float] = Field(None, description="Energia RMS")
     duration_seconds: Optional[float] = Field(None, description="Durata in secondi")
+
+class EQParams(BaseModel):
+    """Modello per i parametri dell'equalizzatore."""
+    param_values: List[float] = Field(..., description="Valori di guadagno per le bande")
+    param_keys: List[str] = Field(..., description="Frequenze delle bande (es. 'Low', 'Mid')")
+
+class SocialFXEntry(BaseModel):
+    """
+    Modello per una voce della Knowledge Base SocialFX.
+    Rappresenta il mapping tra un descrittore semantico e i parametri tecnici.
+    """
+    descriptor: str = Field(..., description="Aggettivo semantico normalizzato (es. 'warm')")
+    effect_type: str = Field("eq", description="Tipo di effetto (es. 'eq', 'comp')")
+    parameters: EQParams = Field(..., description="I parametri tecnici associati")
+    sample_count: int = Field(..., description="Numero di campioni originali aggregati per calcolare la media")
+    source: str = Field("socialfx-original", description="Dataset di origine")
+
+

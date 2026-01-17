@@ -1,5 +1,6 @@
 venv
 venvmusic/
+qdrant_data/
 .env
 data/
 src/data/
@@ -14,10 +15,15 @@ checkpoints/
 src/checkpoints/
 logs/
 clap_training_log/
+export_mongo_data.py
+logs/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
 *$py.class
+.idea/
+~/
 
 # C extensions
 *.so

@@ -1,18 +1,15 @@
 import requests
 import cloudscraper
 import re
-import os
 import time
-import json
 import logging
-import asyncio
-from typing import List, Dict, Optional
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase, AsyncIOMotorGridFSBucket
+from typing import List, Dict
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
 
-from infrastructure.database.repositories import MongoAudioFilesRepository
+from core.infrastructure.database.repositories import MongoAudioFilesRepository
 from privacy_utils import get_random_user_agent, HumanBehavior, RateLimiter
 from metadata import extract_sample_metadata
-from core.domain.audio import AudioFile, AudioMetadata, EnrichedAudioFile, Sample
+from core.domain.audio import AudioFile, AudioMetadata, Sample
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logging.getLogger('pymongo').setLevel(logging.WARNING)

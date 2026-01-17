@@ -3,7 +3,7 @@ Interfacce astratte per i repository.
 """
 from abc import ABC, abstractmethod
 from typing import List, Optional, Dict, Any
-from core.domain.audio import AudioFile
+from core.domain.audio import AudioFile, SocialFxAudio, EnrichedAudioFile
 from core.domain.text import TextDocument
 
 
@@ -137,7 +137,7 @@ class EnrichedAudioRepository(ABC):
     """Repository per file audio arricchiti."""
 
     @abstractmethod
-    async def insert_enriched_audio(self, enriched_data: Dict[str, Any]) -> str:
+    async def insert_enriched_audio(self, enriched_data: EnrichedAudioFile) -> str:
         """
         Inserisce dati audio arricchiti.
         """
@@ -158,9 +158,28 @@ class EnrichedAudioRepository(ABC):
     async def get_enriched_by_gridfs_id(
         self,
         gridfs_file_id: str
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[EnrichedAudioFile]:
         """
         Ottiene dati arricchiti per ID GridFS.
         """
         pass
     
+class SocialFxAudioRepository(ABC):
+    """Repository per file audio con metriche social."""
+
+    @abstractmethod
+    async def insert_social_fx_audio(self, social_fx_data: SocialFxAudio) -> str:
+        """
+        Inserisce dati audio con metriche social.
+        """
+        pass
+
+    @abstractmethod
+    async def get_social_fx_by_descriptor(
+        self,
+        descriptor: str
+    ) -> SocialFxAudio:
+        """
+        Ottiene dati audio social per descrittore.
+        """
+        pass
