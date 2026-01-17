@@ -1,26 +1,20 @@
-# read the original label from audio file and extract correspolnding instrument and timbre
-
-import asyncio
 import logging
 from urllib.parse import urlparse, parse_qs
 from motor.motor_asyncio import AsyncIOMotorClient
 from config.settings import settings
-
-# Configurazione Logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
-async def fix_and_extract_timbres():
+async def samplefocus_fix():
     """
-    Script avanzato di manutenzione:
+    Script avanzato di manutenzione post estrazione:
     1. Trova le categorie 'sporche' (es. con query params).
     2. Estrae i tag semantici (timbri) dai parametri URL.
     3. Sposta i timbri nel campo 'metadata.categories'.
     4. Pulisce il campo 'metadata.main_category'.
     """
 
-    # 1. Connessione al Database
     try:
         connection_string = settings.database.mongodb_connection_string
         db_name = settings.database.mongodb_database_name
@@ -52,8 +46,6 @@ async def fix_and_extract_timbres():
             dirty_string = metadata.get('main_category', "")
 
             if '?' in dirty_string:
-                # --- A. Parsing dell'URL ---
-                # Aggiungiamo un fake domain per far funzionare urlparse se manca
                 if not dirty_string.startswith("http"):
                     fake_url = f"http://fake.com/{dirty_string}"
                 else:
@@ -102,9 +94,5 @@ async def fix_and_extract_timbres():
         except Exception as e:
             logger.error(f"Errore processando documento {doc.get('_id')}: {e}")
 
-    logger.info(f"Finito! {updated_count} documenti aggiornati e puliti.")
+    logger.info(f"{updated_count} documenti aggiornati e puliti.")
     client.close()
-
-
-if __name__ == "__main__":
-    asyncio.run(fix_and_extract_timbres())

@@ -1,23 +1,21 @@
 """
 Dependency injection per database connections.
 """
-import os
 import logging
 from functools import lru_cache
 from typing import Optional
 
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase, AsyncIOMotorCollection
 from motor.motor_asyncio import AsyncIOMotorGridFSBucket
-from fastapi import Depends
 
 from config.settings import settings
 from core.interfaces.repositories import AudioFilesRepository
-from infrastructure.database.repositories import (
+from core.infrastructure.database.repositories import (
     MongoAudioFilesRepository,
     MongoCleanLabelsRepository,
     MongoEnrichedAudioRepository
 )
-from infrastructure.storage.gridfs_handler import GridFSHandler
+from core.infrastructure.storage.gridfs_handler import GridFSHandler
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format="%(levelname)s:%(name)s:%(message)s")

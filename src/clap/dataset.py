@@ -18,9 +18,9 @@ import io
 from motor.motor_asyncio import AsyncIOMotorGridFSBucket
 from core.domain.audio import AudioFile
 from config.settings import settings
-from infrastructure.database.dependecies import get_mongo_database, get_mongo_client, get_gridfs_bucket, \
+from core.infrastructure.database.dependecies import get_mongo_database, get_mongo_client, get_gridfs_bucket, \
     get_audio_repository
-from infrastructure.database.repositories import AudioFilesRepository
+from core.infrastructure.database.repositories import AudioFilesRepository
 logger = logging.getLogger(__name__)
 
 

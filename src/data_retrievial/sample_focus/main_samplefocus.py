@@ -53,7 +53,6 @@ async def main():
 
             # 2. Costruzione URL Filtrata (Category + Tag)
             # Pattern: https://samplefocus.com/categories/{category}?tags[]={timbre}
-            # Aggiungiamo parametri standard per evitare sample troppo lunghi o strani se necessario
             base_url = f"https://samplefocus.com/categories/{category}"
             query_params = f"?tags[]={timbre}&min_tempo=0&max_tempo=200"
 
@@ -69,12 +68,10 @@ async def main():
                 mongo_config=mongo_config
             )
 
-            # 4. Statistiche parziali
             success_count = sum(1 for r in results if r)
             total_successes += success_count
             print(f" -> Scaricati: {success_count}/{TARGET_PER_INTERSECTION} files per questa cella.")
 
-            # Pausa etica
             await asyncio.sleep(2)
 
     print(f"\n==========================================")

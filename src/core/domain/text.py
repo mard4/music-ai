@@ -1,6 +1,3 @@
-"""
-Modelli di dominio per file di testo.
-"""
 from typing import Optional, List
 from pydantic import BaseModel, Field
 

@@ -1,20 +1,16 @@
-"""
-Configurazioni centralizzate dell'applicazione.
-Carica variabili d'ambiente e fornisce configurazioni validate.
-"""
 import os
 from pathlib import Path
 from typing import Optional
-from pydantic import Field, validator
+from pydantic import Field, field_validator, fields
 from pydantic_settings import BaseSettings
 
-# Calcola il percorso assoluto del file .env per evitare problemi di path relativi
 BASE_DIR = Path(__file__).parent.parent
 ENV_FILE_PATH = BASE_DIR / ".env"
 
 class DatabaseSettings(BaseSettings):
-    """Configurazioni del database."""
-    # I default qui sotto verranno usati se non trovati nel .env
+    """
+    Configurazioni del database
+    """
     mongodb_connection_string: str = Field(
         default="mongodb://localhost:27017/",
         description="Connection string per MongoDB"
@@ -31,10 +27,11 @@ class DatabaseSettings(BaseSettings):
         default="audio_files",
         description="Collection GridFS per file audio"
     )
-    mongodb_clean_labels_collection: str = Field(
-        default="clean_audio_labels",
-        description="Collection per label puliti"
+    mongodb_socialfx_collection: str = Field(
+        default="socialfx_collection",
+        description="Collection GridFS per file audio"
     )
+        
 
     class Config:
         env_prefix = "MONGODB_"
@@ -93,29 +90,25 @@ class AudioSettings(BaseSettings):
         env_file = str(ENV_FILE_PATH)
         extra = "ignore"
 
-
 class Settings(BaseSettings):
     """Configurazioni globali dell'applicazione."""
 
-    # Environment
     environment: str = Field(default="development")
     debug: bool = Field(default=False)
-
-    # Configurations - FIX: Usa default_factory invece di istanziare manualmente
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     training: TrainingSettings = Field(default_factory=TrainingSettings)
     clap: CLAPSettings = Field(default_factory=CLAPSettings)
     audio: AudioSettings = Field(default_factory=AudioSettings)
-
-    # Gestione API Key sicura
     OPENAI_API_KEY: Optional[str] = Field(default=None)
+    OPENAI_MODEL: str = Field(default="gpt-4o-mini")
 
-    # Paths
     base_dir: Path = BASE_DIR
     checkpoint_dir: Path = base_dir / "checkpoints"
     log_dir: Path = base_dir / "logs"
 
-    @validator("checkpoint_dir", "log_dir", pre=True)
+    socialfx_dataset_name: str = "seungheondoh/socialfx-original"    #hugging face
+
+    @field_validator("checkpoint_dir", "log_dir")
     def create_dirs(cls, v: Path) -> Path:
         """Crea directory se non esistono."""
         v.mkdir(parents=True, exist_ok=True)
@@ -130,11 +123,10 @@ class Settings(BaseSettings):
 # Singleton instance
 settings = Settings()
 
-# Dizionario helper per compatibilità
 mongo_config = {
     "connection_string": settings.database.mongodb_connection_string,
     "database_name": settings.database.mongodb_database_name,
     "audio_collection": settings.database.mongodb_audio_collection,
     "fs_collection": settings.database.mongodb_fs_collection,
-    "clean_labels_collection": settings.database.mongodb_clean_labels_collection,
+    "socialfx_collection": settings.database.mongodb_socialfx_collection
 }
