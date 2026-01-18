@@ -6,7 +6,7 @@ from data_ingestion.ingestors.base import BaseIngestor
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from qdrant_client.models import VectorParams, Distance, PointStruct
 from config.settings import settings
-from core.infrastructure.database.dependecies import get_audio_repository, get_mongo_client
+from core.infrastructure.database.dependecies import get_audio_repository, get_mongo_client, get_socialfx_repository
 from core.domain.audio import AudioFile, SocialFXEntry
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -24,30 +24,16 @@ class SocialFXIngestor(BaseIngestor):
     async def run(self):
         logger.info("--- Avvio Ingestion SocialFX Parameters ---")
 
-        # 1. Recupero dati (Accesso diretto via motor client per SocialFX)
-        client_mongo = get_mongo_client()
-        db_name = settings.database.mongodb_database_name
+        repo = get_socialfx_repository()
 
-        # FIX: Gestione robusta per evitare errori se c'è ancora l'uguale nella config
-        col_name = settings.database.mongodb_socialfx_collection.lstrip('=')
-        collection = client_mongo[db_name][col_name]
-
-        docs: List[SocialFXEntry] = []
-        async for doc in collection.find({}):
-            try:
-                entry = SocialFXEntry(**doc)
-                docs.append(entry)
-            except Exception as e:
-                logger.warning(f"Documento SocialFX non valido: {e}")
+        docs: List[SocialFXEntry] = await repo.find_all()
 
         logger.info(f"Trovati {len(docs)} descrittori validi.")
         if not docs:
             return
 
-        # 2. Preparazione Qdrant
         self._prepare_collection()
 
-        # 3. Processing
         batch_size = 50
 
         for batch_start in range(0, len(docs), batch_size):
@@ -77,6 +63,6 @@ class SocialFXIngestor(BaseIngestor):
 
             await self._upsert_batch(points)
 
-        logger.info("✓ Ingestion Parameters completata.")
+        logger.info("Ingestion Parameters completata.")
 
 

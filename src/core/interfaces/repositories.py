@@ -183,3 +183,10 @@ class SocialFxAudioRepository(ABC):
         Ottiene dati audio social per descrittore.
         """
         pass
+
+    @abstractmethod
+    async def find_all(self) -> List[SocialFXEntry]:
+        """
+        Ottiene tutte le entry SocialFX.
+        """
+        pass

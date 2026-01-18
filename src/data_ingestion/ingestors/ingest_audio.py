@@ -6,7 +6,7 @@ from data_ingestion.ingestors.base import BaseIngestor
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from qdrant_client.models import VectorParams, Distance, PointStruct
 from config.settings import settings
-from core.infrastructure.database.dependecies import get_audio_repository, get_mongo_client
+from core.infrastructure.database.dependecies import get_audio_repository
 from core.domain.audio import AudioFile, SocialFXEntry
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
