@@ -1,6 +1,6 @@
 import numpy as np
 from datasets import load_dataset
-from typing import Dict, List, Optional, Any
+from typing import Dict, Any
 import logging
 from core.infrastructure.database.dependecies import get_socialfx_repository
 from core.interfaces.repositories import SocialFxAudioRepository
@@ -125,3 +125,5 @@ async def create_socialfx_extractor(mongo_config: dict = None) -> SocialFXKnowle
     # Usa il getter singleton che gestisce connessione e collection corretta
     repository = get_socialfx_repository()
     return SocialFXKnowledgeBase(repository=repository)
+
+

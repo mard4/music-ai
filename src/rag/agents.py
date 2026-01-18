@@ -4,14 +4,10 @@ import logging
 import re
 from pathlib import Path
 from typing import Dict, Any, List
-
 from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam
-# Importiamo Jinja2 per il templating del prompt
 from jinja2 import Template
-
-from rag.retrieval import AudioRAG
-from rag.parameters_search import VectorParameterRetriever
+from rag.retrieval import AudioRetriever, ParameterRetriever
 from rag.enrichment import LabelEnricher
 from config.settings import settings
 
@@ -21,7 +17,6 @@ for lib in ["httpcore", "httpx", "clap", "transformers", "pymongo", "numba", "qd
 
 
 def read_prompt(filename: str) -> str:
-    """Legge un prompt dalla cartella prompts."""
     path = Path(__file__).parent / "prompts" / filename
     try:
         with open(path, "r", encoding="utf-8") as f:
@@ -31,67 +26,41 @@ def read_prompt(filename: str) -> str:
         return ""
 
 
-# --- AGGIORNAMENTO: Intent Classifier con LLM e Jinja2 ---
 class IntentClassifierAgent:
-    """
-    Agente di routing basato su LLM.
-    Usa un prompt Jinja2 per classificare l'intento ed estrarre parametri puliti.
-    """
-
     def __init__(self):
         self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
-        self.model = settings.OPENAI_MODEL  # Assicurati che sia un modello che supporta JSON mode (es. gpt-4o, gpt-3.5-turbo-1106+)
-
-        # Carica il template grezzo
+        self.model = settings.OPENAI_MODEL
         self.raw_template = read_prompt("intent_classification.txt")
 
     def run(self, user_input: str) -> Dict[str, str]:
         logger.info(f"Classificando intento per: '{user_input}'")
-
         try:
-            # 1. Rendering del Prompt con Jinja2
             prompt_content = Template(self.raw_template).render(user_query=user_input)
-
             messages: List[ChatCompletionMessageParam] = [
                 {"role": "system", "content": "You are a helpful assistant that outputs JSON."},
                 {"role": "user", "content": prompt_content}
             ]
-
-            # 2. Chiamata LLM in JSON Mode
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
-                temperature=0.0,  # Deterministico per la classificazione
-                response_format={"type": "json_object"}  # Forza output JSON
+                temperature=0.0,
+                response_format={"type": "json_object"}
             )
-
             content = response.choices[0].message.content
-
-            # 3. Parsing del risultato
             data = json.loads(content)
-
-            intent = data.get("intent", "RETRIEVAL_MIX")
-            params = data.get("params", user_input)
-
             return {
-                "intent": intent,
-                "params": params
+                "intent": data.get("intent", "RETRIEVAL_MIX"),
+                "params": data.get("params", user_input)
             }
-
         except Exception as e:
             logger.error(f"Errore classificazione intento: {e}")
-            # Fallback sicuro in caso di errore LLM
-            return {
-                "intent": "RETRIEVAL_MIX",
-                "params": user_input
-            }
+            return {"intent": "RETRIEVAL_MIX", "params": user_input}
 
-
-# --- GLI ALTRI AGENTI RIMANGONO INVARIATI ---
 
 class AudioFinderAgent:
     def __init__(self):
-        self.tool = AudioRAG()
+        # FIX: Uso la nuova classe AudioRetriever
+        self.tool = AudioRetriever()
 
     def run(self, query: str) -> List[Dict]:
         logger.info(f"Finder Agent: Ricerca audio per '{query}'...")
@@ -100,11 +69,12 @@ class AudioFinderAgent:
 
 class SoundDesignerAgent:
     def __init__(self):
-        self.tool = VectorParameterRetriever()
+        # FIX: Uso la nuova classe ParameterRetriever
+        self.tool = ParameterRetriever()
 
     def run(self, query: str) -> Dict:
         logger.info(f"Sound Designer: Ricerca parametri per '{query}'...")
-        return self.tool.get_parameters(query)
+        return self.tool.retrieve(query)  # Nota: metodo rinominato da get_parameters a retrieve per coerenza
 
 
 class AudioAnalystAgent:
@@ -112,7 +82,7 @@ class AudioAnalystAgent:
         self.openai_client = OpenAI(api_key=settings.OPENAI_API_KEY)
         logger.info("Init Analyst Agent (caricamento CLAP)...")
         self.enricher = LabelEnricher(openai_client=self.openai_client)
-        self.rag_engine = AudioRAG()
+        self.rag_engine = AudioRetriever()
 
     def run(self, file_path: str) -> Dict[str, Any]:
         clean_path = file_path.strip('"').strip("'")
@@ -159,7 +129,6 @@ class HumanizerAgent:
     def __init__(self):
         self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
         self.model = settings.OPENAI_MODEL
-
         self.prompt_analysis = read_prompt("humanizer_analysis.txt")
         self.prompt_default = read_prompt("humanizer_default.txt")
 
@@ -170,7 +139,6 @@ class HumanizerAgent:
             system_prompt = self.prompt_default
 
         user_message = f"Query Utente: {user_query}\nDATI SISTEMA:\n{json.dumps(data, indent=2)}\nRispondi in italiano:"
-
         messages: List[ChatCompletionMessageParam] = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message}
@@ -185,7 +153,6 @@ class HumanizerAgent:
             if response.choices:
                 return response.choices[0].message.content or ""
             return "Nessuna risposta generata."
-
         except Exception as e:
             logger.error(f"Errore generazione risposta: {e}")
             return "Mi dispiace, ho riscontrato un errore nel generare la risposta."

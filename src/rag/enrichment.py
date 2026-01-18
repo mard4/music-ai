@@ -1,12 +1,10 @@
 import logging
 from pathlib import Path
 from typing import List, Optional
-
 from openai import OpenAI
 from torch.nn.functional import cosine_similarity
-
-# Import CLAP e Settings
-from clap.model_handler import CLAPModelHandler, create_clap_model
+import torch
+from rag.clap.model_handler import CLAPModelHandler, create_clap_model
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -84,16 +82,18 @@ class LabelEnricher:
         """
         try:
             # Usa il model handler esistente (src/clap/model_handler.py)
-            audio_embed = self.clap.model.get_audio_embedding([audio_path])
-            text_embed = self.clap.model.get_text_embedding([caption])
+            audio_embed = self.clap.get_audio_embedding([audio_path])
+            text_embed = self.clap.get_text_embedding([caption])
 
-            # Calcolo similarità
-            similarity = cosine_similarity(audio_embed, text_embed).item()
+            if len(audio_embed) == 0 or len(text_embed) == 0:
+                logger.warning("Embedding CLAP vuoti, salto validazione.")
+                return False
 
-            logger.debug(f"CLAP Similarity: {similarity:.4f} (Threshold: {threshold})")
+            t_audio = torch.from_numpy(audio_embed)
+            t_text = torch.from_numpy(text_embed)
+
+            similarity = cosine_similarity(t_audio, t_text).item()
             return similarity < threshold
-
         except Exception as e:
             logger.error(f"CLAP validation failed: {e}")
-            # In caso di errore tecnico nel validatore, lasciamo passare la caption (False positive preferibile a blocco)
             return False
