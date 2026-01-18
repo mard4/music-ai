@@ -1,8 +1,7 @@
 from typing import Dict, Optional
-from datapizza.pipeline import DagPipeline
-from datapizza.embedders.openai import OpenAIEmbedder
-from datapizza.vectorstores.qdrant import QdrantVectorstore
 import logging
+from qdrant_client import QdrantClient
+from openai import OpenAI
 
 from config.settings import settings
 
@@ -16,50 +15,45 @@ class VectorParameterRetriever:
 
     def __init__(self):
         self.collection_name = settings.QDRANT_PARAMETERS_COLLECTION_NAME
-        self.openai_client = OpenAIEmbedder(
-            api_key=settings.OPENAI_API_KEY,
-            model_name="text-embedding-3-small"
+
+        self.client_qdrant = QdrantClient(
+            host=settings.QDRANT_CONNECTION_HOST,
+            port=settings.QDRANT_PORT
         )
-
-        self.qdrant = QdrantVectorstore(host=settings.QDRANT_CONNECTION_HOST, port=settings.QDRANT_CONNECTION_PORT)
-        self.pipeline = DagPipeline()
-        self.pipeline.add_module("embedder", self.openai_client)
-        self.pipeline.add_module("retriever", self.qdrant.as_retriever(
-            collection_name=self.collection_name,
-            k=1,
-            vector_name=""
-        ))
-
-        self.pipeline.connect("embedder", "retriever", target_key="query_vector")
+        self.client_openai = OpenAI(api_key=settings.OPENAI_API_KEY)
+        self.embedding_model = "text-embedding-3-small"
 
     def get_parameters(self, query: str) -> Optional[Dict]:
         """
         Esegue la vector search per trovare i parametri.
         """
         try:
-            result = self.pipeline.run({
-                "embedder": {"text": query},
-                "retriever": {
-                    "collection_name": self.collection_name,
-                    "k": 1,
-                    "vector_name": ""
-                }
-            })
+            # 1. Embedding
+            response = self.client_openai.embeddings.create(
+                input=query,
+                model=self.embedding_model
+            )
+            query_vector = response.data[0].embedding
 
-            chunks = result["retriever"]
-            logger.info(f"Query: '{query}' | Risultati trovati: {len(chunks) if chunks else 0}")
-            logger.debug(f"Raw response: {chunks}")
+            # 2. Ricerca Qdrant (limit=1 per trovare il miglior match)
+            search_result = self.client_qdrant.retrieve(
+                collection_name=self.collection_name,
+                query_vector=query_vector,
+                limit=1
+            )
 
-            if chunks and len(chunks) > 0:
-                best_match = chunks[0]
-                meta = getattr(best_match, "metadata", {})
+            logger.info(f"Query: '{query}' | Risultati trovati: {len(search_result)}")
+
+            if search_result:
+                best_match = search_result[0]
+                payload = best_match.payload or {}
 
                 return {
-                    "descriptor": meta.get("descriptor"),
-                    "score": getattr(best_match, "score", None),
-                    "effect_type": meta.get("effect_type"),
-                    "params": meta.get("param_values"),
-                    "keys": meta.get("param_keys")
+                    "descriptor": payload.get("descriptor"),
+                    "score": best_match.score,
+                    "effect_type": payload.get("effect_type"),
+                    "params": payload.get("param_values"),
+                    "keys": payload.get("param_keys")
                 }
 
             logger.warning(f"Nessun risultato trovato per: '{query}'")
