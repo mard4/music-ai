@@ -6,7 +6,7 @@ import logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 
-async def main():
+async def main_samplefocus():
 
     TARGET_PER_INTERSECTION = 250
 
@@ -69,4 +69,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(main_samplefocus())

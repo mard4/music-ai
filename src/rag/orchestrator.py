@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-# Importiamo anche IntentClassifierAgent
 from rag.agents import AudioFinderAgent, SoundDesignerAgent, AudioAnalystAgent, HumanizerAgent, IntentClassifierAgent
 
 logging.basicConfig(level=logging.INFO)

@@ -1,3 +1,5 @@
+from urllib.parse import urlparse, parse_qs
+
 import requests
 import cloudscraper
 import re
@@ -89,6 +91,22 @@ class SampleFocusExtractor:
                     if chunk:
                         audio_data += chunk
 
+                clean_main_category = None
+                extra_tags = []
+
+                if self.category_url:
+                    # Parsa l'URL per separare il percorso dai parametri
+                    parsed = urlparse(self.category_url)
+                    # Prende solo l'ultima parte del path come categoria (pulisce da ?tags[]=...)
+                    clean_main_category = parsed.path.rstrip("/").split("/")[-1]
+                    # Estrae eventuali tag nascosti nei parametri dell'URL
+                    query_params = parse_qs(parsed.query)
+                    extra_tags = [t.lower().strip() for t in query_params.get('tags[]', [])]
+
+                # Unisce le categorie trovate nei metadati con quelle estratte dall'URL
+                current_categories = metadata.get('categories', []) or []
+                final_categories = list(set(current_categories + extra_tags))
+
                 sample_obj = Sample(
                     file_name=filename,
                     file_type="mp3",
@@ -97,11 +115,11 @@ class SampleFocusExtractor:
                 )
 
                 metadata_obj = AudioMetadata(
-                    categories=metadata.get('categories', []),
+                    categories=final_categories,
                     bpm=metadata.get('bpm'),
                     duration=metadata.get('duration'),
                     key=metadata.get('key'),
-                    main_category=self.category_url.rstrip("/").split("/")[-1] if self.category_url else None
+                    main_category=clean_main_category
                 )
 
                 # Costruiamo l'oggetto AudioFile parziale per usarlo nei metadata di GridFS
