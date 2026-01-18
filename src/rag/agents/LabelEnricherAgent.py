@@ -6,20 +6,9 @@ from torch.nn.functional import cosine_similarity
 import torch
 from rag.clap.model_handler import CLAPModelHandler, create_clap_model
 from config.settings import settings
+from rag.utils import logger, read_prompt
 
-logger = logging.getLogger(__name__)
 
-
-def read_prompt(filename: str) -> str:
-    """Legge il prompt dalla cartella prompts usando pathlib."""
-    path = Path(__file__).parent / "prompts" / filename
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            return f.read().strip()
-    except Exception as e:
-        logger.error(f"Impossibile leggere il prompt {filename}: {e}")
-        # Fallback minimale in caso di errore I/O
-        return "Raw Tags: {label}. Categories: {categories}."
 
 
 class LabelEnricher:

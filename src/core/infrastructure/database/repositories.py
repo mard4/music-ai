@@ -293,3 +293,22 @@ class MongoSocialFxRepository(SocialFxAudioRepository):
         except Exception as e:
             logger.error(f"Error getting SocialFX by descriptor {descriptor}: {e}")
             return None
+
+    async def find_all(self) -> List[SocialFXEntry]:
+        """
+        Ottiene tutte le entry SocialFX.
+        """
+        try:
+            cursor = self.collection.find({})
+            docs = await cursor.to_list(length=None)
+
+            entries = []
+            for doc in docs:
+                if "_id" in doc:
+                    del doc["_id"]
+                entries.append(SocialFXEntry(**doc))
+
+            return entries
+        except Exception as e:
+            logger.error(f"Error finding all SocialFX entries: {e}")
+            return []
