@@ -65,4 +65,5 @@ class QdrantVectorRepository(VectorStoreRepository):
                 ))
             return mapped_results
         except Exception as e:
+            print(f"ERRORE QDRANT search_social_fx: {e}")
             return []

@@ -24,19 +24,17 @@ class DSPSearchTool:
         )
         self.vector_repo = get_vector_repository()
         self.openai = OpenAI(api_key=settings.OPENAI_API_KEY)
-        self.embedding_model = "text-embedding-3-small"
+        self.embedding_model = settings.OPENAI_EMBEDDING_MODEL
 
     async def find_parameters(self, query: str) -> Dict[str, Any]:
         """Cerca i parametri per un singolo concetto semantico."""
         try:
-            # 1. Embed (Generazione Vettore)
             emb_res = self.openai.embeddings.create(
                 input=query,
                 model=self.embedding_model
             )
             query_vector = emb_res.data[0].embedding
 
-            # 2. Search (Via Repository Astratto)
             results: List[SocialFXSearchResult] = await self.vector_repo.search_social_fx(
                 vector=query_vector,
                 limit=1

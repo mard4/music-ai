@@ -69,6 +69,7 @@ class Settings(BaseSettings):
     # OpenAI
     OPENAI_API_KEY: Optional[str] = Field(default=None)
     OPENAI_MODEL: str = Field(default="gpt-4o")
+    OPENAI_EMBEDDING_MODEL: str = Field(default="text-embedding-3-small")
 
     # Qdrant
     QDRANT_CONNECTION_HOST: str = Field(default="localhost")
