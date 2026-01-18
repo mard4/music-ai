@@ -1,81 +1,66 @@
-import asyncio
-import sys
 import logging
+import sys
 from pathlib import Path
-from typing import List
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from qdrant_client import QdrantClient
+from typing import List, Any
+from data_ingestion.ingestors.base import BaseIngestor
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from qdrant_client.models import VectorParams, Distance, PointStruct
-from openai import OpenAI
-
 from config.settings import settings
-from core.infrastructure.database.dependecies import get_mongo_client
-from core.domain.audio import SocialFXEntry
+from core.infrastructure.database.dependecies import get_audio_repository, get_mongo_client
+from core.domain.audio import AudioFile, SocialFXEntry
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
-async def ingest_socialfx_vectors():
-    client_mongo = get_mongo_client()
-    db_name = settings.database.mongodb_database_name
-    db = client_mongo[db_name]
-    collection = db[settings.database.mongodb_socialfx_collection]
+class SocialFXIngestor(BaseIngestor):
+    """
+    Ingestor per i parametri DSP (SocialFXEntry -> Qdrant).
+    """
 
-    docs: List[SocialFXEntry] = []
+    def __init__(self):
+        super().__init__(collection_name=settings.QDRANT_PARAMETERS_COLLECTION_NAME)
 
-    async for doc in collection.find({}):
-        try:
-            entry = SocialFXEntry(**doc)
-            docs.append(entry)
-        except Exception as e:
-            logger.warning(f"Documento non valido ignorato: {e}")
+    async def run(self):
+        logger.info("--- Avvio Ingestion SocialFX Parameters ---")
 
-    logger.info(f"Trovati {len(docs)} descrittori validi in MongoDB")
+        # 1. Recupero dati (Accesso diretto via motor client per SocialFX)
+        client_mongo = get_mongo_client()
+        db_name = settings.database.mongodb_database_name
 
-    if not docs:
-        logger.warning("Nessun documento valido trovato. Uscita.")
-        return
+        # FIX: Gestione robusta per evitare errori se c'è ancora l'uguale nella config
+        col_name = settings.database.mongodb_socialfx_collection.lstrip('=')
+        collection = client_mongo[db_name][col_name]
 
-    # 2. Configurazione Qdrant
-    qdrant = QdrantClient(host=settings.QDRANT_CONNECTION_HOST, port=settings.QDRANT_PORT)
-    collection_name = settings.QDRANT_PARAMETERS_COLLECTION_NAME
+        docs: List[SocialFXEntry] = []
+        async for doc in collection.find({}):
+            try:
+                entry = SocialFXEntry(**doc)
+                docs.append(entry)
+            except Exception as e:
+                logger.warning(f"Documento SocialFX non valido: {e}")
 
-    if qdrant.collection_exists(collection_name):
-        qdrant.delete_collection(collection_name)
-        logger.info(f"Collezione '{collection_name}' eliminata")
+        logger.info(f"Trovati {len(docs)} descrittori validi.")
+        if not docs:
+            return
 
-    qdrant.create_collection(
-        collection_name=collection_name,
-        vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
-    )
-    logger.info(f"Collezione '{collection_name}' ricreata.")
+        # 2. Preparazione Qdrant
+        self._prepare_collection()
 
-    openai_client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        # 3. Processing
+        batch_size = 50
 
-    # 4. Creazione Punti
-    points = []
-    batch_size = 50
+        for batch_start in range(0, len(docs), batch_size):
+            batch_end = min(batch_start + batch_size, len(docs))
+            batch_docs = docs[batch_start:batch_end]
 
-    logger.info(f"Creazione {len(docs)} embedding in batch di {batch_size}...")
+            descriptors = [doc.descriptor for doc in batch_docs]
+            embeddings = self._generate_embeddings(descriptors)
 
-    for batch_start in range(0, len(docs), batch_size):
-        batch_end = min(batch_start + batch_size, len(docs))
-        batch_docs = docs[batch_start:batch_end]
+            points = []
+            for idx_in_batch, (doc, vector) in enumerate(zip(batch_docs, embeddings)):
+                global_idx = batch_start + idx_in_batch + 1
 
-        # Accesso ai dati tramite attributi del modello Pydantic
-        descriptors = [doc.descriptor for doc in batch_docs]
-
-        try:
-            response = openai_client.embeddings.create(
-                input=descriptors,
-                model="text-embedding-3-small"
-            )
-
-            for idx_in_batch, (doc, embedding_data) in enumerate(zip(batch_docs, response.data)):
-                idx = batch_start + idx_in_batch
-
-                # Payload strutturato garantito dal modello
                 payload = {
                     "descriptor": doc.descriptor,
                     "effect_type": doc.effect_type,
@@ -84,28 +69,14 @@ async def ingest_socialfx_vectors():
                     "source": doc.source
                 }
 
-                # Uso PointStruct invece di dizionari raw
                 points.append(PointStruct(
-                    id=idx + 1,
-                    vector=embedding_data.embedding,
+                    id=global_idx,
+                    vector=vector,
                     payload=payload
                 ))
 
-            logger.info(f"[{batch_end}/{len(docs)}] Batch elaborato")
+            await self._upsert_batch(points)
 
-        except Exception as e:
-            logger.error(f"Errore batch embedding: {e}")
+        logger.info("✓ Ingestion Parameters completata.")
 
-    # 5. Caricamento su Qdrant
-    if points:
-        try:
-            qdrant.upsert(
-                collection_name=collection_name,
-                points=points
-            )
-            logger.info(f"✓ Indicizzati {len(points)} parametri su Qdrant.")
-        except Exception as e:
-            logger.error(f"Errore upsert su Qdrant: {e}")
 
-if __name__ == "__main__":
-    asyncio.run(ingest_socialfx_vectors())
