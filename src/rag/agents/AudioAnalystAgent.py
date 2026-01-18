@@ -1,55 +1,56 @@
-import json
-from typing import Dict, Any, List
-from openai import OpenAI
-from openai.types.chat import ChatCompletionMessageParam
-from jinja2 import Template
-from config.settings import settings
-from rag.utils import read_prompt, logger
+import os
+from typing import Dict, Any
+from rag.agents.AgentBase import AgentBase
+from rag.tools.audio_analysis import LabelEnricherTool
+from rag.tools.retrieval import RetrievalTool
+from rag.utils import logger
 
 
-class AudioAnalystAgent:
+class AudioAnalystAgent(AgentBase):
+    """
+    AGENT: Audio Analyst ("Il Medico").
+    Ruolo: Analizza file locali e trova corrispondenze.
+    """
+
     def __init__(self):
-        self.openai_client = OpenAI(api_key=settings.OPENAI_API_KEY)
-        logger.info("Init Analyst Agent (caricamento CLAP)...")
-        self.enricher = LabelEnricher(openai_client=self.openai_client)
-        self.rag_engine = AudioRetriever()
+        super().__init__(agent_name="AudioAnalyst")
+
+        # 2. Carica i Tools specifici
+        self.analyser = LabelEnricherTool()
+        self.retriever = RetrievalTool()
 
     def run(self, file_path: str) -> Dict[str, Any]:
         clean_path = file_path.strip('"').strip("'")
 
         if not os.path.exists(clean_path):
-            return {"error": f"File locale non trovato: {clean_path}"}
+            return {"error": f"File non trovato: {clean_path}"}
 
         filename = os.path.basename(clean_path)
-        logger.info(f"Analizzando file locale: {filename}")
+        self.logger.info(f"Analyst: Inizio diagnosi per {filename}")
 
         try:
-            name_no_ext = os.path.splitext(filename)[0]
-            raw_tags = re.split(r'[-_\s]+', name_no_ext)
+            # FASE 1: Diagnosi (Analisi del file)
+            # L'agente usa il tool per capire cos'è il file
+            analysis = self.analyser.enrich_and_verify(filename, clean_path)
 
-            caption_result = self.enricher.enrich_tags(
-                raw_tags=raw_tags,
-                categories=["imported_sample"],
-                audio_path=clean_path
-            )
+            clean_caption = analysis["caption"]
+            self.logger.info(f"Analyst: File identificato come '{clean_caption}'")
 
-            is_hallucination = "[FLAGGED]" in caption_result
-            clean_caption = caption_result.replace("[FLAGGED]", "").strip()
-
-            logger.info(f"Cerco file simili nel DB per: '{clean_caption}'")
-            similar_files = self.rag_engine.retrieve(clean_caption, k=3)
+            # FASE 2: Consultazione (Ricerca simili)
+            # L'agente usa il tool di ricerca con la diagnosi appena fatta
+            similar_samples = self.retriever.search_similar_audio(clean_caption, limit=3)
 
             return {
                 "source": "LOCAL_FILE",
                 "filename": filename,
                 "analysis": {
-                    "generated_description": clean_caption,
-                    "clap_status": "Low Confidence" if is_hallucination else "Verified",
-                    "inferred_tags": raw_tags
+                    "description": clean_caption,
+                    "confidence": analysis["status"],
+                    "tags": analysis["raw_tags"]
                 },
-                "similar_db_samples": similar_files
+                "recommendations": similar_samples
             }
 
         except Exception as e:
-            logger.error(f"Errore analisi: {e}", exc_info=True)
-            return {"error": str(e)}
+            self.logger.error(f"Analyst Error: {e}", exc_info=True)
+            return {"error": "Analisi fallita"}

@@ -1,2 +1,0 @@
-"You are helping with data analysis tasks, this is the user prompt: {{ user_prompt }}",
-"Retrieved content:\n{% for chunk in chunks %}{{ chunk.text }}\n{% endfor %}"

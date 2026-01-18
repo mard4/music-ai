@@ -7,8 +7,10 @@ from typing import Optional
 
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase, AsyncIOMotorCollection
 from motor.motor_asyncio import AsyncIOMotorGridFSBucket
+from qdrant_client import AsyncQdrantClient
 
 from config.settings import settings
+from core.infrastructure.vector_store.qdrant_repository import QdrantVectorRepository
 from core.interfaces.repositories import AudioFilesRepository, SocialFxAudioRepository
 from core.infrastructure.database.repositories import (
     MongoAudioFilesRepository,
@@ -16,6 +18,7 @@ from core.infrastructure.database.repositories import (
     MongoEnrichedAudioRepository, MongoSocialFxRepository
 )
 from core.infrastructure.storage.gridfs_handler import GridFSHandler
+from core.interfaces.vector_store import VectorStoreRepository
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format="%(levelname)s:%(name)s:%(message)s")
@@ -184,3 +187,25 @@ def get_socialfx_repository(
         collection = get_socialfx_collection()
 
     return MongoSocialFxRepository(collection)
+
+
+@lru_cache(maxsize=1)
+def get_qdrant_client() -> AsyncQdrantClient:
+    """Returns cached Async Qdrant Client."""
+    return AsyncQdrantClient(
+        host=settings.QDRANT_CONNECTION_HOST,
+        port=settings.QDRANT_PORT
+    )
+
+
+@lru_cache(maxsize=1)
+def get_vector_repository(
+        client: Optional[AsyncQdrantClient] = None
+) -> VectorStoreRepository:
+    """
+    Returns a cached Vector Store Repository instance.
+    """
+    if client is None:
+        client = get_qdrant_client()
+
+    return QdrantVectorRepository(client)
