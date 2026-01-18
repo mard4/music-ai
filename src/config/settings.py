@@ -99,8 +99,13 @@ class Settings(BaseSettings):
     training: TrainingSettings = Field(default_factory=TrainingSettings)
     clap: CLAPSettings = Field(default_factory=CLAPSettings)
     audio: AudioSettings = Field(default_factory=AudioSettings)
+
     OPENAI_API_KEY: Optional[str] = Field(default=None)
     OPENAI_MODEL: str = Field(default="gpt-4o-mini")
+    QDRANT_AUDIO_COLLECTION_NAME: str
+    QDRANT_PARAMETERS_COLLECTION_NAME: str
+    QDRANT_CONNECTION_HOST: str
+    QDRANT_PORT: int
 
     base_dir: Path = BASE_DIR
     checkpoint_dir: Path = base_dir / "checkpoints"

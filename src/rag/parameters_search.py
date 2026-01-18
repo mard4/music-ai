@@ -15,23 +15,15 @@ class VectorParameterRetriever:
     """
 
     def __init__(self):
-        self.collection_name = "socialfx_vectors"
-
-        # 1. Configurazione Componenti
+        self.collection_name = settings.QDRANT_PARAMETERS_COLLECTION_NAME
         self.openai_client = OpenAIEmbedder(
             api_key=settings.OPENAI_API_KEY,
             model_name="text-embedding-3-small"
         )
 
-        self.qdrant = QdrantVectorstore(host="localhost", port=6333)
-
-        # 2. Costruzione Pipeline
+        self.qdrant = QdrantVectorstore(host=settings.QDRANT_CONNECTION_HOST, port=settings.QDRANT_CONNECTION_PORT)
         self.pipeline = DagPipeline()
         self.pipeline.add_module("embedder", self.openai_client)
-        # Impostiamo k=1 di default, ma deve essere passato anche nel run
-        # Specifica il nome del vettore usato in Qdrant (creato come 'embedding')
-        # Use default vector (unnamed) for this collection
-        # Explicitly specify empty vector_name to use the collection's unnamed vector
         self.pipeline.add_module("retriever", self.qdrant.as_retriever(
             collection_name=self.collection_name,
             k=1,

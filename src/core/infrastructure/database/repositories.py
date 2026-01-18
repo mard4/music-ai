@@ -9,9 +9,9 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 from core.interfaces.repositories import (
     AudioFilesRepository,
     CleanLabelsRepository,
-    EnrichedAudioRepository
+    EnrichedAudioRepository, SocialFxAudioRepository
 )
-from core.domain.audio import AudioFile, Sample, AudioMetadata
+from core.domain.audio import AudioFile, Sample, AudioMetadata, SocialFXEntry
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format="%(levelname)s:%(name)s:%(message)s")
@@ -252,4 +252,44 @@ class MongoEnrichedAudioRepository(EnrichedAudioRepository):
             return doc
         except Exception as e:
             logger.error(f"Error getting enriched audio for {gridfs_file_id}: {e}")
+            return None
+
+class MongoSocialFxRepository(SocialFxAudioRepository):
+    """Implementazione MongoDB per repository SocialFX."""
+
+    def __init__(self, collection: AsyncIOMotorCollection):
+        self.collection = collection
+
+    async def insert_social_fx_audio(self, social_fx_data: SocialFXEntry) -> str:
+        """
+        Inserisce o aggiorna una entry SocialFX.
+        Usa descriptor + effect_type come chiave unica.
+        """
+        try:
+            result = await self.collection.replace_one(
+                {
+                    "descriptor": social_fx_data.descriptor,
+                    "effect_type": social_fx_data.effect_type
+                },
+                social_fx_data.model_dump(),
+                upsert=True
+            )
+            return "upserted" if result.upserted_id or result.modified_count else "no_change"
+        except Exception as e:
+            logger.error(f"Error inserting SocialFX entry: {e}")
+            raise
+
+    async def get_social_fx_by_descriptor(self, descriptor: str) -> Optional[SocialFXEntry]:
+        """
+        Ottiene dati audio social per descrittore.
+        (Nota: potrebbe ritornare una lista se ci sono più effetti per lo stesso descrittore,
+        ma l'interfaccia originale prevede un singolo oggetto. Qui implementiamo una logica base).
+        """
+        try:
+            doc = await self.collection.find_one({"descriptor": descriptor})
+            if doc:
+                return SocialFXEntry(**doc)
+            return None
+        except Exception as e:
+            logger.error(f"Error getting SocialFX by descriptor {descriptor}: {e}")
             return None

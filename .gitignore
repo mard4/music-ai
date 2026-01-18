@@ -1,7 +1,7 @@
 venv
 venvmusic/
 qdrant_data/
-.env
+src/.env
 data/
 src/data/
 src/data/audios
@@ -157,7 +157,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
+src/.env
 .envrc
 .venv
 env/

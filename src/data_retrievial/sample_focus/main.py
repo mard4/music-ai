@@ -1,5 +1,4 @@
 import asyncio
-import os
 from SampleFocusExtractor import download_by_category_to_mongo
 from config.settings import settings, mongo_config
 import logging
@@ -37,12 +36,6 @@ async def main():
 
     total_successes = 0
 
-    # ==========================================
-    # 4. ESECUZIONE MATRICE (Loop Incrociato)
-    # ==========================================
-    print(f"--- Inizio raccolta dati Matrix Strategy ---")
-    print(f"Target per cella: {TARGET_PER_INTERSECTION}")
-
     for category in instruments:
         for timbre in timbres:
 
@@ -73,11 +66,6 @@ async def main():
             print(f" -> Scaricati: {success_count}/{TARGET_PER_INTERSECTION} files per questa cella.")
 
             await asyncio.sleep(2)
-
-    print(f"\n==========================================")
-    print(f"RACCOLTA COMPLETATA")
-    print(f"Totale campioni nel dataset: {total_successes}")
-    print(f"==========================================")
 
 
 if __name__ == "__main__":

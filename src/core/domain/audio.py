@@ -45,10 +45,10 @@ class EnrichedAudioFile(AudioFile):
     rms_energy: Optional[float] = Field(None, description="Energia RMS")
     duration_seconds: Optional[float] = Field(None, description="Durata in secondi")
 
-class EQParams(BaseModel):
-    """Modello per i parametri dell'equalizzatore."""
-    param_values: List[float] = Field(..., description="Valori di guadagno per le bande")
-    param_keys: List[str] = Field(..., description="Frequenze delle bande (es. 'Low', 'Mid')")
+class EffectParams(BaseModel):
+    """Modello generico per i parametri di un effetto (EQ, Comp, Reverb)."""
+    param_values: List[float] = Field(..., description="Valori numerici dei parametri")
+    param_keys: List[str] = Field(..., description="Nomi dei parametri (es. 'Low', 'Threshold')")
 
 class SocialFXEntry(BaseModel):
     """
@@ -57,7 +57,7 @@ class SocialFXEntry(BaseModel):
     """
     descriptor: str = Field(..., description="Aggettivo semantico normalizzato (es. 'warm')")
     effect_type: str = Field("eq", description="Tipo di effetto (es. 'eq', 'comp')")
-    parameters: EQParams = Field(..., description="I parametri tecnici associati")
+    parameters: EffectParams = Field(..., description="I parametri tecnici associati")
     sample_count: int = Field(..., description="Numero di campioni originali aggregati per calcolare la media")
     source: str = Field("socialfx-original", description="Dataset di origine")
 
