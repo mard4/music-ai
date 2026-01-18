@@ -50,7 +50,7 @@ class BaseIngestor(ABC):
         try:
             response = self.openai_client.embeddings.create(
                 input=texts,
-                model="text-embedding-3-small"
+                model=settings.OPENAI_EMBEDDING_MODEL
             )
             return [data.embedding for data in response.data]
         except Exception as e:

@@ -3,7 +3,7 @@ from data_ingestion.ingestors.ingest_audio import AudioCatalogIngestor
 from data_ingestion.ingestors.ingest_parameters import SocialFXIngestor
 
 
-async def main():
+async def main_ingestor():
 
     audio_ingestor = AudioCatalogIngestor()
     await audio_ingestor.run()
@@ -13,4 +13,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(main_ingestor())
