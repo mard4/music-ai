@@ -9,17 +9,18 @@ from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase, AsyncI
 from motor.motor_asyncio import AsyncIOMotorGridFSBucket
 
 from config.settings import settings
-from core.interfaces.repositories import AudioFilesRepository
+from core.interfaces.repositories import AudioFilesRepository, SocialFxAudioRepository
 from core.infrastructure.database.repositories import (
     MongoAudioFilesRepository,
     MongoCleanLabelsRepository,
-    MongoEnrichedAudioRepository
+    MongoEnrichedAudioRepository, MongoSocialFxRepository
 )
 from core.infrastructure.storage.gridfs_handler import GridFSHandler
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format="%(levelname)s:%(name)s:%(message)s")
 logging.getLogger('pymongo').setLevel(logging.WARNING)
+
 
 @lru_cache(maxsize=1)
 def get_mongo_client() -> AsyncIOMotorClient:
@@ -156,3 +157,30 @@ def get_clean_labels_repository(
         collection = get_clean_labels_collection()
 
     return MongoCleanLabelsRepository(collection)
+
+@lru_cache(maxsize=1)
+def get_socialfx_collection(
+    database: Optional[AsyncIOMotorDatabase] = None
+) -> AsyncIOMotorCollection:
+    """
+    Returns a cached SocialFX collection instance.
+    """
+    if database is None:
+        database = get_mongo_database()
+
+    collection_name = getattr(settings.database, "mongodb_socialfx_collection")
+    logger.debug(f"Getting SocialFX collection: {collection_name}")
+    return database[collection_name]
+
+
+@lru_cache(maxsize=1)
+def get_socialfx_repository(
+    collection: Optional[AsyncIOMotorCollection] = None
+) -> SocialFxAudioRepository:
+    """
+    Returns a cached SocialFX repository instance.
+    """
+    if collection is None:
+        collection = get_socialfx_collection()
+
+    return MongoSocialFxRepository(collection)

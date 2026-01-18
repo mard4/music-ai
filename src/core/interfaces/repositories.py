@@ -3,7 +3,7 @@ Interfacce astratte per i repository.
 """
 from abc import ABC, abstractmethod
 from typing import List, Optional, Dict, Any
-from core.domain.audio import AudioFile, SocialFxAudio, EnrichedAudioFile
+from core.domain.audio import AudioFile, SocialFXEntry, EnrichedAudioFile
 from core.domain.text import TextDocument
 
 
@@ -168,7 +168,7 @@ class SocialFxAudioRepository(ABC):
     """Repository per file audio con metriche social."""
 
     @abstractmethod
-    async def insert_social_fx_audio(self, social_fx_data: SocialFxAudio) -> str:
+    async def insert_social_fx_audio(self, social_fx_data: SocialFXEntry) -> str:
         """
         Inserisce dati audio con metriche social.
         """
@@ -178,7 +178,7 @@ class SocialFxAudioRepository(ABC):
     async def get_social_fx_by_descriptor(
         self,
         descriptor: str
-    ) -> SocialFxAudio:
+    ) -> SocialFXEntry:
         """
         Ottiene dati audio social per descrittore.
         """

@@ -1,12 +1,7 @@
 import asyncio
 import logging
 import os
-from typing import Dict
-
-# Import agenti
 from rag.agents import AudioFinderAgent, SoundDesignerAgent, AudioAnalystAgent, HumanizerAgent
-
-# Configurazione Logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 

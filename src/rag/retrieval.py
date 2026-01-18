@@ -1,4 +1,3 @@
-# rag/retrieval.py
 from typing import List, Dict
 from datapizza.vectorstores.qdrant import QdrantVectorstore
 from datapizza.embedders.openai import OpenAIEmbedder
@@ -15,10 +14,8 @@ class AudioRAG:
     """
 
     def __init__(self):
-        # PUNTA ALLA NUOVA COLLEZIONE AUDIO
-        self.collection_name = "audio_vectors"
-        
-        self.vectorstore = QdrantVectorstore(host="localhost", port=6333)
+        self.collection_name = settings.QDRANT_AUDIO_COLLECTION_NAME
+        self.vectorstore = QdrantVectorstore(host=settings.QDRANT_CONNECTION_HOST, port=settings.QDRANT_CONNECTION_PORT)
         self.embedder = OpenAIEmbedder(
             api_key=settings.OPENAI_API_KEY, 
             model_name="text-embedding-3-small"
@@ -51,7 +48,7 @@ class AudioRAG:
             for chunk in chunks:
                 meta = getattr(chunk, "metadata", {})
                 results.append({
-                    "type": "audio_file", # Tag utile per l'Orchestrator
+                    "type": "audio_file",
                     "score": getattr(chunk, "score", 0.0),
                     "filename": meta.get("filename"),
                     "label": meta.get("label"),
