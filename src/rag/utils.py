@@ -7,10 +7,19 @@ for lib in ["httpcore", "httpx", "clap", "transformers", "pymongo", "numba", "qd
 
 
 def read_prompt(filename: str) -> str:
-    path = Path(__file__).parent / "prompts" / filename
+    """
+    Legge un file prompt dalla cartella 'rag/prompts' in modo sicuro.
+    """
     try:
-        with open(path, "r", encoding="utf-8") as f:
-            return f.read().strip()
+        current_dir = Path(__file__).resolve().parent
+        prompt_path = current_dir / "prompts" / filename
+
+        if not prompt_path.exists():
+            logger.error(f"Prompt file not found at: {prompt_path}")
+            return ""
+
+        return prompt_path.read_text(encoding="utf-8")
+
     except Exception as e:
-        logger.error(f"Impossibile leggere il prompt {filename}: {e}")
+        logger.error(f"Error reading prompt {filename}: {e}")
         return ""

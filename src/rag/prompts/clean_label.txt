@@ -1,36 +1,36 @@
- Analizza questo file audio con le seguenti informazioni per GENERARE UN NUOVO LABEL SEMANTICO.
+Analyze this audio file using the following information to GENERATE A NEW SEMANTIC LABEL.
 
-    ### INFORMAZIONI DISPONIBILI:
-    1. **LABEL ORIGINALE**: "{label}"
-    2. **CATEGORIE PRINCIPALI**: {categories}
-    3. **CONTESTO**: Il file appartiene a una collezione di suoni per produzione musicale (es. kick, bass, synth, drums, pads, vocal).
+### AVAILABLE INFORMATION:
+1. **ORIGINAL LABEL**: "{label}"
+2. **MAIN CATEGORIES**: {categories}
+3. **CONTEXT**: The file belongs to a collection of sounds for music production (e.g., kick, bass, synth, drums, pads, vocal).
 
-    ### IL TUO COMPITO:
-    Genera un **nuovo label semantico** che sia **descrittivo, accurato e utile** per un produttore musicale. Segui questa strategia in 3 fasi:
+### YOUR TASK:
+Generate a **new semantic label** that is **descriptive, accurate, and useful** for a music producer. Follow this 3-phase strategy:
 
-    **FASE 1: ANALISI ESTRATTIVA**
-    - Estrai **tutte le parole chiave semantiche** dal label originale (es. "dark", "punchy", "808", "analog").
-    - Identifica la **categoria principale** (es. "kick", "bass") dai metadati.
-    - Valuta se i metadati forniscono **informazioni contestuali aggiuntive** rilevanti.
+**PHASE 1: EXTRACTIVE ANALYSIS**
+- Extract **all semantic keywords** from the original label (e.g., "dark", "punchy", "808", "analog").
+- Identify the **main category** (e.g., "kick", "bass") from the metadata.
+- Evaluate whether the metadata provides **additional relevant contextual information**.
 
-    **FASE 2: INTEGRAZIONE SEMANTICA**
-    - **Mantieni sempre** le qualità sonore percettive (es. "warm", "crunchy", "airy").
-    - **Mantieni sempre** le riferimenti tecnici o culturali specifici (es. "808", "TB-303", "vinyl").
-    - **Combina** queste informazioni con la categoria identificata.
-    - **Se utile**, arricchisci con aggettivi contestuali appropriati (es. per un "kick" potrebbero essere "punchy", "deep", "boomy").
+**PHASE 2: SEMANTIC INTEGRATION**
+- **Always retain** perceptual sound qualities (e.g., "warm", "crunchy", "airy").
+- **Always retain** specific technical or cultural references (e.g., "808", "TB-303", "vinyl").
+- **Combine** this information with the identified category.
+- **If useful**, enrich with appropriate contextual adjectives (e.g., for a "kick" these could be "punchy", "deep", "boomy").
 
-    **FASE 3: FORMULAZIONE**
-    - Struttura il nuovo label nel formato: `[CATEGORIA] + [DESCRITTORI SEMANTICI] + [SPECIFICHE TECNICHE/CULTURALI]`
-    - Usa un linguaggio naturale e conciso tipico delle librerie audio professionali.
-    - **Priorità assoluta**: La descrizione deve catturare *come il suono viene percepito* piuttosto che solo cosa è.
+**PHASE 3: FORMULATION**
+- Structure the new label in the format: `[CATEGORY] + [SEMANTIC DESCRIPTORS] + [TECHNICAL/CULTURAL SPECIFICATIONS]`
+- Use natural, concise language typical of professional audio libraries.
+- **Top priority**: The description must capture *how the sound is perceived* rather than just what it is.
 
-    ### ESEMPI DI TRASFORMAZIONE:
-    - Input: `"Kick 01"`, Categorie: `["kick", "drum"]` → Output: `"Punchy Acoustic Kick Drum"`
-    - Input: `"Dark Bass"`, Categorie: `["bass", "synth"]` → Output: `"Dark Analog Synth Bass with Sub Frequency"`
-    - Input: `"Synth Pad Chord"`, Categorie: `["pad", "synth"]` → Output: `"Warm Atmospheric Synth Pad with Long Release"`
+### TRANSFORMATION EXAMPLES:
+- Input: `"Kick 01"`, Categories: `["kick", "drum"]` → Output: `"Punchy Acoustic Kick Drum"`
+- Input: `"Dark Bass"`, Categories: `["bass", "synth"]` → Output: `"Dark Analog Synth Bass with Sub Frequency"`
+- Input: `"Synth Pad Chord"`, Categories: `["pad", "synth"]` → Output: `"Warm Atmospheric Synth Pad with Long Release"`
 
-    ## REGOLE
-    Non inventare informazioni che non sono presenti nei metadati o nei labels
+## RULES
+Do not invent information that is not present in the metadata or labels.
 
-    ### OUTPUT FINALE:
-    Fornisci SOLO il nuovo label pulito, senza virgolette, punti o spiegazioni aggiuntive.
+### FINAL OUTPUT:
+Provide ONLY the clean new label, without quotation marks, periods, or additional explanations.

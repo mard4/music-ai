@@ -1,39 +1,61 @@
 import json
 from typing import Dict, Any, List
-from openai import OpenAI
-from openai.types.chat import ChatCompletionMessageParam
-from jinja2 import Template
-from config.settings import settings
+from rag.agents.AgentBase import AgentBase
 from rag.utils import read_prompt, logger
 
-class HumanizerAgent:
+
+class HumanizerAgent(AgentBase):
+    """
+    AGENT: Humanizer ("Il Volto").
+    Ruolo: Sintetizzare dati tecnici (JSON) in una risposta naturale utile all'utente.
+    """
+
     def __init__(self):
-        self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
-        self.model = settings.OPENAI_MODEL
-        self.prompt_analysis = read_prompt("humanizer_analysis.txt")
-        self.prompt_default = read_prompt("humanizer_default.txt")
+        super().__init__(agent_name="Humanizer")
 
-    def generate_response(self, user_query: str, intent: str, data: Any) -> str:
-        if intent == "ANALYSIS":
-            system_prompt = self.prompt_analysis
-        else:
-            system_prompt = self.prompt_default
+        # cambia dinamicamente in base all'intent Cache dei template per evitare I/O ripetuto
+        self.templates = {
+            "ANALYSIS": read_prompt("humanizer_analysis.txt"),
+            "RETRIEVAL": read_prompt("humanizer_retrieval.txt"),
+            "DEFAULT": read_prompt("humanizer_default.txt")
+        }
 
-        user_message = f"Query Utente: {user_query}\nDATI SISTEMA:\n{json.dumps(data, indent=2)}\nRispondi in italiano:"
-        messages: List[ChatCompletionMessageParam] = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_message}
-        ]
+    def generate_response(self, user_query: str, intent: str, data: Dict[str, Any]) -> str:
+        """
+        Genera la risposta finale basata sui dati raccolti dagli altri agenti.
+        """
+        self.logger.info(f"Humanizer: Generazione risposta per intent '{intent}'")
 
+        # 1. Selezione del Template in base all'intento
+        # Se l'intent non è mappato, usa DEFAULT
+        template_content = self.templates.get(intent, self.templates["DEFAULT"])
+
+        # Sovrascriviamo il template corrente dell'AgentBase
+        self.prompt = template_content
+
+        # 2. Preparazione dei messaggi
+        # Usiamo render_prompt per iniettare i dati nel template Jinja2
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                temperature=0.7
+            # Passiamo 'results' che corrisponde alla chiave usata nel prompt Jinja (es. results.found_samples)
+            # 'data' solitamente contiene {"results": ...} dal workflow, o lo passiamo direttamente.
+            # Assumiamo dal workflow.py che data["results"] contenga i dati veri.
+            context_data = data.get("results", {}) if "results" in data else data
+
+            dynamic_system_prompt = self.render_prompt(
+                user_query=user_query,
+                results=context_data
             )
-            if response.choices:
-                return response.choices[0].message.content or ""
-            return "Nessuna risposta generata."
+
+            messages = [
+                {"role": "system", "content": dynamic_system_prompt},
+                {"role": "user", "content": "Genera la risposta finale per l'utente."}
+            ]
+
+            # 3. Chiamata LLM
+            response = self.call_llm(messages, temperature=0.7)
+
+            return response if response else "Non sono riuscito a generare una descrizione."
+
         except Exception as e:
-            logger.error(f"Errore generazione risposta: {e}")
-            return "Mi dispiace, ho riscontrato un errore nel generare la risposta."
+            self.logger.error(f"Errore generazione risposta: {e}", exc_info=True)
+            return "Mi dispiace, ho riscontrato un errore nel sintetizzare i risultati."

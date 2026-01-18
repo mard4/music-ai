@@ -9,7 +9,7 @@ from config.settings import settings
 from rag.utils import read_prompt, logger
 
 
-class BaseAgent:
+class AgentBase:
     """
     Classe base generica per agenti che utilizzano OpenAI.
     Gestisce l'inizializzazione del client, del modello e il caricamento del prompt.
@@ -18,21 +18,24 @@ class BaseAgent:
     def __init__(self,
                  prompt_file: Optional[str] = None,
                  tools: Optional[List[Dict]] = None,
-                 context: Optional[Dict[str, Any]] = None):
+                 context: Optional[Dict[str, Any]] = None,
+                 agent_name: Optional[str] = None):
         self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
         self.model = settings.OPENAI_MODEL
         self.tools = tools
         self.logger = logger
         self.context = context or {}
+        self.agent_name = agent_name
+        self.prompt = prompt_file
 
         if prompt_file:
             try:
-                self.prompt_template = read_prompt(prompt_file)
+                self.prompt = read_prompt(prompt_file)
             except Exception as e:
                 self.logger.error(f"Errore caricamento prompt '{prompt_file}': {e}")
-                self.prompt_template = ""
+                self.prompt = ""
         else:
-            self.prompt_template = None
+            self.prompt = None
 
     def call_llm(
             self,
@@ -97,14 +100,14 @@ class BaseAgent:
         Unisce il context globale (self.context) con i parametri dinamici (kwargs).
         I parametri passati qui (es. user_query) vincono sul context globale in caso di conflitti.
         """
-        if not self.prompt_template:
+        if not self.prompt:
             return ""
 
         try:
             # 2. Merge dei dizionari: kwargs sovrascrive self.context se ci sono chiavi uguali
             full_context = {**self.context, **kwargs}
 
-            return Template(self.prompt_template).render(**full_context)
+            return Template(self.prompt).render(**full_context)
         except Exception as e:
             self.logger.warning(f"Errore rendering template: {e}")
-            return self.prompt_template
+            return self.prompt
