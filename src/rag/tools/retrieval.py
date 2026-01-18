@@ -24,9 +24,9 @@ class RetrievalTool:
                 input=query_text,
                 model=settings.OPENAI_EMBEDDING_MODEL
             )
-            query_vector = emb_res.data[0].embedding
+            vector = emb_res.data[0].embedding
 
-            results = await self.vector_repo.search_audio(query_vector, limit=limit)
+            results = await self.vector_repo.search_audio(vector, limit=limit)
 
             # 3. Format per l'Agente
             return [{

@@ -33,10 +33,10 @@ class DSPSearchTool:
                 input=query,
                 model=self.embedding_model
             )
-            query_vector = emb_res.data[0].embedding
+            vector = emb_res.data[0].embedding
 
             results: List[SocialFXSearchResult] = await self.vector_repo.search_social_fx(
-                vector=query_vector,
+                vector=vector,
                 limit=1
             )
 

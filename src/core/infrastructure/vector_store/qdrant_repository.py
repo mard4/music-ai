@@ -19,12 +19,14 @@ class QdrantVectorRepository(VectorStoreRepository):
 
     async def search_audio(self, vector: List[float], limit: int = 5) -> List[AudioSearchResult]:
         try:
-            results = await self.client.query_points(
+            response = await self.client.query_points(
                 collection_name=self.audio_collection,
-                query_vector=vector,
+                query=vector,
                 limit=limit,
                 with_payload=True
             )
+
+            results = response.points
 
             # Mappatura da Qdrant Point a Domain Object
             mapped_results = []
@@ -40,16 +42,18 @@ class QdrantVectorRepository(VectorStoreRepository):
                 ))
             return mapped_results
         except Exception as e:
+            print(f"ERRORE QDRANT search_audio: {e}")
             return []
 
     async def search_social_fx(self, vector: List[float], limit: int = 1) -> List[SocialFXSearchResult]:
         try:
-            results = await self.client.query_points(
+            response = await self.client.query_points(
                 collection_name=self.fx_collection,
-                query_vector=vector,
+                query=vector,
                 limit=limit,
                 with_payload=True
             )
+            results = response.points
 
             mapped_results = []
             for point in results:
