@@ -32,7 +32,7 @@ class LabelEnricher:
         self.client = openai_client
         self.model = settings.OPENAI_MODEL
 
-        # Inizializza CLAP (o usa quello passato) senza toccare la folder clap/
+        # Inizializza CLAP
         self.clap = clap_handler or create_clap_model(pretrained=True)
 
         # Carica il template dal file di testo

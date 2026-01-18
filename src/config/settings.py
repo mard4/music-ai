@@ -1,15 +1,16 @@
 import os
 from pathlib import Path
 from typing import Optional
-from pydantic import Field, field_validator, fields
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
 BASE_DIR = Path(__file__).parent.parent
 ENV_FILE_PATH = BASE_DIR / ".env"
 
+
 class DatabaseSettings(BaseSettings):
     """
-    Configurazioni del database
+    Configurazioni del database MongoDB.
     """
     mongodb_connection_string: str = Field(
         default="mongodb://localhost:27017/",
@@ -23,99 +24,69 @@ class DatabaseSettings(BaseSettings):
         default="audio_samples",
         description="Collection per i metadata audio"
     )
-    mongodb_fs_collection: str = Field(
-        default="audio_files",
-        description="Collection GridFS per file audio"
+    mongodb_gridfs_bucket: str = Field(
+        default="fs",
+        description="Bucket name per GridFS"
     )
     mongodb_socialfx_collection: str = Field(
         default="socialfx_collection",
-        description="Collection GridFS per file audio"
+        description="Collection per SocialFX parameters"
     )
-        
-
-    class Config:
-        env_prefix = "MONGODB_"
-        case_sensitive = False
-        env_file = str(ENV_FILE_PATH)
-        extra = "ignore"
-
-
-class TrainingSettings(BaseSettings):
-    """Configurazioni per il training."""
-    learning_rate: float = Field(default=1e-4)
-    weight_decay: float = Field(default=0.1)
-    batch_size: int = Field(default=16)
-    num_workers: int = Field(default=0)
-    epochs: int = Field(default=10)
-    patience: int = Field(default=10)
-    log_interval: int = Field(default=10)
-    checkpoint_interval: int = Field(default=5)
-
-    # Split ratios
-    train_ratio: float = Field(default=0.7)
-    val_ratio: float = Field(default=0.15)
-    test_ratio: float = Field(default=0.15)
-
-    # Audio processing
-    target_sample_rate: int = Field(default=48000)
-    max_duration_seconds: float = Field(default=10.0)
-
-    class Config:
-        env_prefix = "TRAINING_"
-        case_sensitive = False
-        env_file = str(ENV_FILE_PATH)
-        extra = "ignore"
 
 
 class CLAPSettings(BaseSettings):
-    """Configurazioni specifiche per CLAP."""
+    """
+    Configurazioni specifiche per CLAP (Inference).
+    """
+    # Importante: enable_fusion=False per usare il modello 'HTSAT-base' con checkpoint '630k-audioset-best.pt'
     enable_fusion: bool = Field(default=False)
-    logit_scale: float = Field(default=100.0)
     device: str = Field(default="cuda")
+    model_name: str = "HTSAT-tiny"
+    use_cuda: bool = Field(default=True)
+    audio_sample_rate: int = 48000
 
-    class Config:
-        env_prefix = "CLAP_"
-        case_sensitive = False
-        env_file = str(ENV_FILE_PATH)
-        extra = "ignore"
-
-
-class AudioSettings(BaseSettings):
-    """Configurazioni audio."""
-    target_sample_rate: int = Field(default=48000)
-    max_duration_seconds: float = Field(default=10.0)
-
-    class Config:
-        env_prefix = "AUDIO_"
-        env_file = str(ENV_FILE_PATH)
-        extra = "ignore"
+class VectorDatabaseSettings(BaseSettings):
+    QDRANT_CONNECTION_HOST: str = Field(default="localhost")
+    QDRANT_PORT: int = Field(default=6333)
+    QDRANT_AUDIO_COLLECTION_NAME: str = Field(default="audio_vectors")
+    QDRANT_PARAMETERS_COLLECTION_NAME: str = Field(default="socialfx_vectors")
 
 class Settings(BaseSettings):
-    """Configurazioni globali dell'applicazione."""
+    """
+    Configurazioni globali dell'applicazione.
+    Aggrega tutte le sotto-configurazioni e le variabili d'ambiente piatte.
+    """
 
+    # App Meta
+    app_name: str = "Music AI RAG"
     environment: str = Field(default="development")
     debug: bool = Field(default=False)
+
+    # Moduli
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
-    training: TrainingSettings = Field(default_factory=TrainingSettings)
     clap: CLAPSettings = Field(default_factory=CLAPSettings)
-    audio: AudioSettings = Field(default_factory=AudioSettings)
 
+    # OpenAI
     OPENAI_API_KEY: Optional[str] = Field(default=None)
-    OPENAI_MODEL: str = Field(default="gpt-4o-mini")
-    QDRANT_AUDIO_COLLECTION_NAME: str
-    QDRANT_PARAMETERS_COLLECTION_NAME: str
-    QDRANT_CONNECTION_HOST: str
-    QDRANT_PORT: int
+    OPENAI_MODEL: str = Field(default="gpt-4o")
 
+    # Qdrant
+    QDRANT_CONNECTION_HOST: str = Field(default="localhost")
+    QDRANT_PORT: int = Field(default=6333)
+    QDRANT_AUDIO_COLLECTION_NAME: str = Field(default="audio_vectors")
+    QDRANT_PARAMETERS_COLLECTION_NAME: str = Field(default="socialfx_vectors")
+
+    # External Datasets
+    socialfx_dataset_name: str = "seungheondoh/socialfx-original"
+
+    # Paths
     base_dir: Path = BASE_DIR
-    checkpoint_dir: Path = base_dir / "checkpoints"
-    log_dir: Path = base_dir / "logs"
+    log_dir: Path = base_dir.parent / "logs"
+    checkpoint_dir: Path = base_dir.parent / "checkpoints"
 
-    socialfx_dataset_name: str = "seungheondoh/socialfx-original"    #hugging face
-
-    @field_validator("checkpoint_dir", "log_dir")
+    @field_validator("log_dir")
     def create_dirs(cls, v: Path) -> Path:
-        """Crea directory se non esistono."""
+        """Crea automaticamente la directory dei log se non esiste."""
         v.mkdir(parents=True, exist_ok=True)
         return v
 
@@ -125,13 +96,13 @@ class Settings(BaseSettings):
         case_sensitive = False
         extra = "ignore"
 
-# Singleton instance
+
+# Singleton instance da importare nel progetto
 settings = Settings()
 
 mongo_config = {
     "connection_string": settings.database.mongodb_connection_string,
     "database_name": settings.database.mongodb_database_name,
     "audio_collection": settings.database.mongodb_audio_collection,
-    "fs_collection": settings.database.mongodb_fs_collection,
     "socialfx_collection": settings.database.mongodb_socialfx_collection
 }
