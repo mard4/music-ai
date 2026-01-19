@@ -6,12 +6,17 @@ User Query: "{{ user_query }}"
 
 ### SEARCH RESULTS (Sample Database)
 {% if results.found_samples %}
-I found {{ results.found_samples|length }} relevant samples:
+I found {{ results.found_samples|length }} high-quality samples matching your request:
+
 {% for sample in results.found_samples %}
-- **{{ sample.filename }}** (Score: {{ "%.2f"|format(sample.score) }}) - Tags: {{ sample.tags }}
+{# Visualizziamo il nome AI e i tag smart #}
+- **{{ sample.filename }}**
+  *Style/Character:* {{ sample.tags }}
+  *Relevance:* {{ "%.2f"|format(sample.score) }} | *AI Quality Check:* {{ "%.2f"|format(sample.quality) }}
 {% endfor %}
+
 {% else %}
-I did not find specific audio samples in the database for this request.
+I couldn't find exact matches in the library, but I can suggest how to synthesize this sound.
 {% endif %}
 
 ### SOUND DESIGN ADVICE (DSP Parameters)
