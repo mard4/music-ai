@@ -73,7 +73,7 @@ class Workflow:
 
         else:
             # Fallback per intenti sconosciuti
-            context_data["results"] = {"error": "Intento non riconosciuto."}
+            context_data["results"] = {"error": "Intent not recognized."}
 
         # STEP 3: Generazione Risposta
         final_response = self.humanizer.generate_response(

@@ -25,7 +25,7 @@ class DatabaseSettings(BaseSettings):
         description="Collection per i metadata audio"
     )
     mongodb_gridfs_bucket: str = Field(
-        default="fs",
+        default="audio_files",
         description="Bucket name per GridFS"
     )
     mongodb_socialfx_collection: str = Field(
@@ -50,6 +50,7 @@ class VectorDatabaseSettings(BaseSettings):
     QDRANT_PORT: int = Field(default=6333)
     QDRANT_AUDIO_COLLECTION_NAME: str = Field(default="audio_vectors")
     QDRANT_PARAMETERS_COLLECTION_NAME: str = Field(default="socialfx_vectors")
+    QDRANT_ENRICHED_COLLECTION_NAME: str = Field(default="audio_enriched_v1")
 
 class Settings(BaseSettings):
     """
@@ -76,6 +77,7 @@ class Settings(BaseSettings):
     QDRANT_PORT: int = Field(default=6333)
     QDRANT_AUDIO_COLLECTION_NAME: str = Field(default="audio_vectors")
     QDRANT_PARAMETERS_COLLECTION_NAME: str = Field(default="socialfx_vectors")
+    QDRANT_ENRICHED_COLLECTION_NAME: str = Field(default="audio_enriched_v1")
 
     # External Datasets
     socialfx_dataset_name: str = "seungheondoh/socialfx-original"
@@ -104,6 +106,7 @@ settings = Settings()
 mongo_config = {
     "connection_string": settings.database.mongodb_connection_string,
     "database_name": settings.database.mongodb_database_name,
+    #"gridfs_bucket": settings.database.mongodb_gridfs_bucket,
     "audio_collection": settings.database.mongodb_audio_collection,
     "socialfx_collection": settings.database.mongodb_socialfx_collection
 }

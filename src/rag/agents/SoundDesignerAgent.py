@@ -40,6 +40,6 @@ class SoundDesignerAgent(AgentBase):
             "concept": dsp_result.get("descriptor"),
             "effect": dsp_result.get("effect_type"),
             "values": dsp_result.get("params"),
-            "keys": dsp_result.get("keys"),  # Importante passarlo all'Humanizer!
+            "param_keys": dsp_result.get("keys"),
             "explanation": f"Parametri per {dsp_result.get('descriptor')}"
         }
