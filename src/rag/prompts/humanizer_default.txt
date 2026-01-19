@@ -14,4 +14,3 @@ You can perform the following tasks:
 1. If the user is just greeting (e.g., "Hello"), answer politely.
 2. If the user is asking a general music question, answer briefly.
 3. If the request is unclear, kindly explain **what you can do** (use the capabilities list above).
-4. **Language**: Respond in **English**.

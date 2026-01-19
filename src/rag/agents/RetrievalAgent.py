@@ -11,17 +11,15 @@ class AudioRetriever(AgentBase):
 
     def __init__(self):
         super().__init__(agent_name="AudioRetriever")
-        # Inizializza il Tool (il "Sistema di Ricerca")
         self.tool = RetrievalTool()
 
-    async def retrieve(self, query: str, k: int = 5) -> List[Dict[str, Any]]:
+    async def retrieve(self, query: str) -> List[Dict[str, Any]]:
         """
-        Interfaccia pubblica chiamata dal Workflow.
+        Ricerca di audio simili a partire dal label
         """
         self.logger.info(f"AudioRetriever: Ricevuta richiesta per '{query}'")
 
-        # Delega il lavoro sporco al Tool
-        # Nota: usiamo await perché il tool ora è asincrono
-        results = await self.tool.search_similar_audio(query, limit=k)
+        results = await self.tool.search_similar_audio_text_vector(query)
 
         return results
+

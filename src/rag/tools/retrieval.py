@@ -18,7 +18,13 @@ class RetrievalTool:
         self.vector_repo = get_vector_repository()
         self.client_openai = OpenAI(api_key=settings.OPENAI_API_KEY)
 
-    async def search_similar_audio(self, query_text: str, limit: int = 5) -> List[Dict[str, Any]]:
+
+    async def search_similar_audio_text_vector(self, query_text: str) -> List[Dict[str, Any]]:
+        """"
+        Cerca audio basandosi su una descrizione testuale (es. "Trovami un basso distorto").
+        Usa lo spazio 'text_vector'.
+        """
+
         try:
             emb_res = self.client_openai.embeddings.create(
                 input=query_text,
@@ -26,18 +32,42 @@ class RetrievalTool:
             )
             vector = emb_res.data[0].embedding
 
-            results = await self.vector_repo.search_audio(vector, limit=limit)
+            results = await self.vector_repo.search_audio(vector)
 
-            # 3. Format per l'Agente
-            return [{
-                "filename": res.filename,
-                "score": res.score,
-                "description": res.label,
-                "tags": res.categories,
-                "quality": res.metadata.get("clap_quality", 0.0),
-                # "path": res.metadata.get("real_filename")
-            } for res in results]
+            return [self._format_result(res) for res in results]
 
         except Exception as e:
-            logger.error(f"Retrieval Error: {e}")
+            logger.error(f"Retrieval Text Error: {e}")
             return []
+
+    async def search_similar_audio_audio_vector(self, vector: List[float]) -> List[Dict[str, Any]]:
+        """
+        Cerca audio basandosi su un vettore audio raw (CLAP).
+        Usa lo spazio 'audio_vector'.
+        """
+        try:
+
+            # Nota: 'vector' qui arriva già calcolato da CLAP (dall'AudioAnalystAgent)
+            results = await self.vector_repo.search_audio(
+                vector=vector,
+                vector_name="audio_vector"
+            )
+
+            return [self._format_result(res) for res in results]
+
+        except Exception as e:
+            logger.error(f"Retrieval Vector Error: {e}")
+            return []
+
+    def _format_result(self, res) -> Dict[str, Any]:
+        """Helper per formattare l'output standard verso gli agenti."""
+        return {
+            "filename": res.filename,
+            "score": res.score,
+            "description": res.label,
+            "tags": res.categories,
+            "quality_score": res.metadata.get("clap_quality")
+            # "quality": res.metadata.get("clap_score", 0.0),
+            # "bpm": res.metadata.get("bpm"),
+            # "key": res.metadata.get("key")
+        }

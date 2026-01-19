@@ -24,3 +24,9 @@ set PYTHONPATH=H:\music-ai\src;%PYTHONPATH%
 ## TO DO evaluation
 # ds = load_dataset("seungheondoh/socialfx-cls-eval")
 # ds = load_dataset("seungheondoh/socialfx-gen-eval")
+
+
+# TO DO 
+- riparare workflow con label nuovo e tags nuovi 
+- unificare in un singolo vector DB per il retrievial
+- non dare mai nome file originale
