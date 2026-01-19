@@ -15,15 +15,15 @@ class QdrantVectorRepository(VectorStoreRepository):
     def __init__(self, client: AsyncQdrantClient):
         self.client = client
         #self.audio_collection = settings.QDRANT_AUDIO_COLLECTION_NAME
-        self.audio_collection = getattr(settings, "QDRANT_ENRICHED_COLLECTION_NAME")
+        self.audio_collection = settings.QDRANT_ENRICHED_COLLECTION_NAME
         self.fx_collection = settings.QDRANT_PARAMETERS_COLLECTION_NAME
 
-    async def search_audio(self, vector: List[float], limit: int = 5) -> List[AudioSearchResult]:
+    async def search_audio(self, vector: List[float],vector_name: str = "text_vector") -> List[AudioSearchResult]:
         try:
             response = await self.client.query_points(
                 collection_name=self.audio_collection,
                 query=vector,
-                limit=limit,
+                using=vector_name,
                 with_payload=True
             )
 
@@ -35,7 +35,7 @@ class QdrantVectorRepository(VectorStoreRepository):
                 payload = point.payload or {}
 
                 display_name = payload.get("label", payload.get("original_filename", "Unknown Sample"))
-                smart_tags = payload.get("ai_tags", payload.get("categories", []))
+                smart_tags = payload.get("ai_tags", payload.get("original_tags", []))
                 quality_score = payload.get("clap_score", 0.0)
 
                 mapped_results.append(AudioSearchResult(
@@ -45,7 +45,7 @@ class QdrantVectorRepository(VectorStoreRepository):
                     filename=display_name,
                     label=payload.get("label", ""),
                     categories=smart_tags,
-                    metadata={"clap_quality": quality_score, "real_filename": payload.get("original_filename")}
+                    metadata={"clap_quality": quality_score, "real_filename": payload.get("original_filename"), "original_tags": payload.get("original_tags")}
                 ))
             return mapped_results
         except Exception as e:

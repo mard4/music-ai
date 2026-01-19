@@ -24,4 +24,4 @@ No similar samples found in the database.
 
 ### RESPONSE EXAMPLE
 "I analyzed your file 'loop_01.wav'. It appears to be a [Description].
-Since the acoustic fingerprint is distinct, I also found 3 similar samples in the library that might work well..."1
+Since the acoustic fingerprint is distinct, I also found 3 similar samples in the library that might work well..."

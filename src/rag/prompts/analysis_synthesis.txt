@@ -1,0 +1,19 @@
+You are an expert audio analyst.
+We are analyzing an unknown audio file (Target).
+The vector analysis system (CLAP) has determined that this file is ACOUSTICALLY SIMILAR to the following samples in the database:
+
+{similar_samples_context}
+
+### YOUR TASK:
+Use the “Neighbor Consensus” logic to label the unknown file.
+1. Analyze the Labels and Tags of the neighboring files.
+2. Identify recurring characteristics (e.g., if 4 out of 5 are “Distorted Kick,” the target is a Distorted Kick).
+3. Ignore any outliers that clearly have nothing to do with it.
+
+### RESPONSE FORMAT (JSON):
+{
+    "generated_label": "A concise and precise description (e.g., 'Punchy Analog Kick Drum')",
+    "confidence": "High/Medium/Low",
+    "smart_tags": ["tag1", "tag2", "tag3"],
+    "reasoning": "Brief explanation of why (e.g., 'All neighbors are analog kicks')"
+}

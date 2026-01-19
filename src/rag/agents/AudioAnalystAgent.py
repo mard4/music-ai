@@ -1,56 +1,56 @@
 import os
+import logging
 from typing import Dict, Any
+
 from rag.agents.AgentBase import AgentBase
-from rag.tools.audio_analysis import LabelEnricherTool
+from rag.clap.model_handler import create_clap_model
 from rag.tools.retrieval import RetrievalTool
-from rag.utils import logger
+from rag.agents.LabelEnricherAgent import LabelEnricher
+
+logger = logging.getLogger(__name__)
 
 
 class AudioAnalystAgent(AgentBase):
-    """
-    AGENT: Audio Analyst ("Il Medico").
-    Ruolo: Analizza file locali e trova corrispondenze.
-    """
-
     def __init__(self):
-        super().__init__(agent_name="AudioAnalyst")
+        super().__init__(context={"agent_name": "AudioAnalyst"})
+        logger.info("Caricamento CLAP...")
+        self.ear = create_clap_model()
+        self.retrieval_tool = RetrievalTool()
+        self.synthesizer = LabelEnricher()
 
-        # 2. Carica i Tools specifici
-        self.analyser = LabelEnricherTool()
-        self.retriever = RetrievalTool()
-
-    def run(self, file_path: str) -> Dict[str, Any]:
+    async def run(self, file_path: str) -> Dict[str, Any]:
         clean_path = file_path.strip('"').strip("'")
-
         if not os.path.exists(clean_path):
             return {"error": f"File non trovato: {clean_path}"}
 
         filename = os.path.basename(clean_path)
-        self.logger.info(f"Analyst: Inizio diagnosi per {filename}")
 
         try:
-            # FASE 1: Diagnosi (Analisi del file)
-            # L'agente usa il tool per capire cos'è il file
-            analysis = self.analyser.enrich_and_verify(filename, clean_path)
+            # 1. Genera vettore CLAP
+            audio_vector = self.ear.get_audio_embedding([clean_path])[0].tolist()
 
-            clean_caption = analysis["caption"]
-            self.logger.info(f"Analyst: File identificato come '{clean_caption}'")
+            # 2. Usa il tool corretto
+            similar_samples = await self.retrieval_tool.search_similar_audio_audio_vector(
+                vector=audio_vector,
+            )
 
-            # FASE 2: Consultazione (Ricerca simili)
-            # L'agente usa il tool di ricerca con la diagnosi appena fatta
-            similar_samples = self.retriever.search_similar_audio(clean_caption, limit=3)
+            if not similar_samples:
+                return {"error": "Nessun vicino trovato."}
+
+            # 3. Sintesi
+            synthesis_result = self.synthesizer.run(
+                filename=filename,
+                audio_path=clean_path,
+                neighbors=similar_samples
+            )
 
             return {
-                "source": "LOCAL_FILE",
-                "filename": filename,
-                "analysis": {
-                    "description": clean_caption,
-                    "confidence": analysis["status"],
-                    "tags": analysis["raw_tags"]
-                },
-                "recommendations": similar_samples
+                "source": "LOCAL_FILE_ANALYSIS",
+                "target_file": filename,
+                "generated_analysis": synthesis_result,
+                "evidence": similar_samples
             }
 
         except Exception as e:
-            self.logger.error(f"Analyst Error: {e}", exc_info=True)
-            return {"error": "Analisi fallita"}
+            logger.error(f"Errore Analyst: {e}")
+            return {"error": str(e)}

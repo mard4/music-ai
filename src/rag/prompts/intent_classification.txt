@@ -53,6 +53,9 @@ User: "Make it sound more warm and punchy"
 Output: {"intent": "RETRIEVAL", "params": "warm,punchy"}
 (Reasoning: "warm" and "punchy" are found in descriptors)
 
+## CASE: GREETINGS
+Definition: The request is greeting like "HI", "Hello"
+Answer with: "How can I help you?" and wait for a new query.
 
 ## CASE: OTHER
 Definition: The request is not inherent to the context (music production, audio analysis, or sample retrieval).

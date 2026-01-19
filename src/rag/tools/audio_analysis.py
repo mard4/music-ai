@@ -20,7 +20,8 @@ class LabelEnricherTool:
         self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
         self.model = settings.OPENAI_MODEL
         self.clap = clap_handler or create_clap_model(pretrained=True)
-        self.prompt = read_prompt("clean_label.txt")
+        self.clean_prompt = read_prompt("clean_label.txt")
+        self.synthesis_prompt = read_prompt("analysis_synthesis.txt.txt")
 
     def enrich_and_verify(self, filename: str, audio_path: str, original_tags: List[str] = None) -> Dict[str, Any]:
         """
@@ -55,7 +56,7 @@ class LabelEnricherTool:
     def _generate_metadata(self, label: str, tags: List[str]) -> Dict[str, Any]:
         """Chiede all'LLM di generare caption e filtrare i tag."""
         try:
-            prompt = self.prompt.format(
+            prompt = self.clean_prompt.format(
                 label=label,
                 tags=", ".join(tags)
             )
@@ -97,3 +98,64 @@ class LabelEnricherTool:
         except Exception as e:
             logger.warning(f"CLAP Check skipped: {e}")
             return False, 0.0
+
+    def predict_label_from_neighbors(self, filename: str, audio_path: str, neighbors: List[Dict[str, Any]]) -> Dict[
+        str, Any]:
+        """
+        PIPELINE REVERSE-RAG (Audio-First):
+        1. Sintesi label basata sui 'vicini' trovati nel DB.
+        2. Validazione CLAP (Hallucination Check) usando il metodo condiviso.
+        """
+        # 1. Costruzione Contesto per LLM
+        context_text = ""
+        for i, n in enumerate(neighbors):
+            label = n.get('description') or n.get('label') or "N/A"
+            tags = n.get('tags') or []
+            score_val = n.get('score', 0)
+            context_text += (
+                f"{i + 1}. Label: '{label}' | Tags: {tags} | Sim: {score_val:.4f}\n"
+            )
+
+        # 2. Chiamata LLM (Sintesi)
+        try:
+            full_prompt = self.synthesis_prompt.format(similar_samples_context=context_text)
+
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": "You are an expert audio taxonomist. Output valid JSON."},
+                    {"role": "user", "content": full_prompt}
+                ],
+                temperature=0.2,  # Bassa temperatura per maggiore precisione
+                response_format={"type": "json_object"}
+            )
+
+            content = response.choices[0].message.content
+            result_json = json.loads(content)
+
+        except Exception as e:
+            logger.error(f"Sintesi LLM fallita: {e}")
+            return {
+                "generated_label": "Analysis Failed",
+                "confidence": "None",
+                "reasoning": str(e)
+            }
+
+        # 3. Validazione CLAP (Hallucination Check) - RIUTILIZZO TUO METODO
+        generated_label = result_json.get("generated_label", "")
+
+        if generated_label and audio_path:
+            # Qui riutilizziamo esattamente la tua logica torch/cosine_similarity
+            is_hallucination, score = self._check_hallucination(generated_label, audio_path)
+
+            # Arricchiamo il JSON con i dati di verifica
+            result_json["clap_score"] = round(score, 4)
+            result_json["is_hallucination"] = is_hallucination
+
+            if is_hallucination:
+                result_json["confidence"] = "Low (Audio Mismatch)"
+                result_json["hallucination_warning"] = True
+            else:
+                result_json["hallucination_warning"] = False
+
+        return result_json
