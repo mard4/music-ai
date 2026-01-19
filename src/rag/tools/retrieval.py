@@ -33,7 +33,9 @@ class RetrievalTool:
                 "filename": res.filename,
                 "score": res.score,
                 "description": res.label,
-                "tags": res.categories
+                "tags": res.categories,
+                "quality": res.metadata.get("clap_quality", 0.0),
+                # "path": res.metadata.get("real_filename")
             } for res in results]
 
         except Exception as e:

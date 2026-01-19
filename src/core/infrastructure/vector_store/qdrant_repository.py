@@ -14,7 +14,8 @@ class QdrantVectorRepository(VectorStoreRepository):
 
     def __init__(self, client: AsyncQdrantClient):
         self.client = client
-        self.audio_collection = settings.QDRANT_AUDIO_COLLECTION_NAME
+        #self.audio_collection = settings.QDRANT_AUDIO_COLLECTION_NAME
+        self.audio_collection = getattr(settings, "QDRANT_ENRICHED_COLLECTION_NAME")
         self.fx_collection = settings.QDRANT_PARAMETERS_COLLECTION_NAME
 
     async def search_audio(self, vector: List[float], limit: int = 5) -> List[AudioSearchResult]:
@@ -32,13 +33,19 @@ class QdrantVectorRepository(VectorStoreRepository):
             mapped_results = []
             for point in results:
                 payload = point.payload or {}
+
+                display_name = payload.get("label", payload.get("original_filename", "Unknown Sample"))
+                smart_tags = payload.get("ai_tags", payload.get("categories", []))
+                quality_score = payload.get("clap_score", 0.0)
+
                 mapped_results.append(AudioSearchResult(
                     id=point.id,
                     score=point.score,
                     payload=payload,
-                    filename=payload.get("filename", "unknown"),
+                    filename=display_name,
                     label=payload.get("label", ""),
-                    categories=payload.get("categories", [])
+                    categories=smart_tags,
+                    metadata={"clap_quality": quality_score, "real_filename": payload.get("original_filename")}
                 ))
             return mapped_results
         except Exception as e:

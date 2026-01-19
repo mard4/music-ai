@@ -12,6 +12,7 @@ class AudioSearchResult(SearchResult):
     filename: str
     label: str
     categories: List[str]
+    metadata: Optional[Dict[str, Any]] = None
 
 class SocialFXSearchResult(SearchResult):
     """Risultato specifico per parametri DSP."""
