@@ -48,7 +48,7 @@ class HumanizerAgent(AgentBase):
 
             messages = [
                 {"role": "system", "content": dynamic_system_prompt},
-                {"role": "user", "content": "Genera la risposta finale per l'utente."}
+                {"role": "user", "content": "Generate the final response for the user"}
             ]
 
             # 3. Chiamata LLM

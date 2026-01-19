@@ -20,7 +20,7 @@ To achieve the character "{{ results.suggested_parameters.concept }}", I suggest
 
 Technical explanation: {{ results.suggested_parameters.explanation }}
 Recommended parameters:
-{% for key in results.suggested_parameters.keys %}
+{% for key in results.suggested_parameters.param_keys %}
 - {{ key }}: {{ results.suggested_parameters.values[loop.index0] }}
 {% endfor %}
 {% else %}

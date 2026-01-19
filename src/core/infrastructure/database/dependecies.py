@@ -60,7 +60,7 @@ def get_gridfs_bucket(
     if database is None:
         database = get_mongo_database()
 
-    bucket_name = settings.database.mongodb_fs_collection
+    bucket_name = settings.database.mongodb_gridfs_bucket
     logger.debug(f"Getting GridFS bucket: {bucket_name}")
     return AsyncIOMotorGridFSBucket(database, bucket_name=bucket_name)
 

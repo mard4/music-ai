@@ -1,36 +1,33 @@
-Analyze this audio file using the following information to GENERATE A NEW SEMANTIC LABEL.
+Analyze this audio file to GENERATE A NEW SEMANTIC LABEL and REFINE ITS TAGS.
 
 ### AVAILABLE INFORMATION:
 1. **ORIGINAL LABEL**: "{label}"
-2. **MAIN CATEGORIES**: {categories}
-3. **CONTEXT**: The file belongs to a collection of sounds for music production (e.g., kick, bass, synth, drums, pads, vocal).
+2. **ORIGINAL TAGS**: {tags}
+3. **CONTEXT**: Music production sample library.
 
 ### YOUR TASK:
-Generate a **new semantic label** that is **descriptive, accurate, and useful** for a music producer. Follow this 3-phase strategy:
+Perform a deep semantic analysis to produce two outputs: a descriptive **Caption** and a list of **Smart Tags**.
 
 **PHASE 1: EXTRACTIVE ANALYSIS**
-- Extract **all semantic keywords** from the original label (e.g., "dark", "punchy", "808", "analog").
-- Identify the **main category** (e.g., "kick", "bass") from the metadata.
-- Evaluate whether the metadata provides **additional relevant contextual information**.
+- Identify the **main sound category** (e.g., Kick, Bass, texture) from the label.
+- Analyze the `ORIGINAL TAGS` to find technical details (e.g., "analog", "dry", "120bpm") and timbral qualities (e.g., "warm", "distorted").
 
-**PHASE 2: SEMANTIC INTEGRATION**
-- **Always retain** perceptual sound qualities (e.g., "warm", "crunchy", "airy").
-- **Always retain** specific technical or cultural references (e.g., "808", "TB-303", "vinyl").
-- **Combine** this information with the identified category.
-- **If useful**, enrich with appropriate contextual adjectives (e.g., for a "kick" these could be "punchy", "deep", "boomy").
+**PHASE 2: CAPTION GENERATION**
+- Create a concise, natural description.
+- Structure: `[CATEGORY] + [TIMBRAL QUALITIES] + [TECHNICAL SPECS]`.
+- Example: "Fat Analog Synth Bass with Warm Saturation".
 
-**PHASE 3: FORMULATION**
-- Structure the new label in the format: `[CATEGORY] + [SEMANTIC DESCRIPTORS] + [TECHNICAL/CULTURAL SPECIFICATIONS]`
-- Use natural, concise language typical of professional audio libraries.
-- **Top priority**: The description must capture *how the sound is perceived* rather than just what it is.
+**PHASE 3: SEMANTIC TAG REFINEMENT (The Filter)**
+Review the `ORIGINAL TAGS` list and apply this logic to generate `smart_tags`:
+1. **KEEP** tags that describe the sound texture (e.g., "warm", "fuzzy", "punchy").
+2. **KEEP** tags that describe the instrument/category (e.g., "bass", "synth").
+3. **DISCARD** contradictory tags (e.g., remove "drums" or "perc" if the sound is a "Bass").
+4. **DISCARD** subjective/useless tags (e.g., "cool", "best", "new", "free").
+5. **NORMALIZE** tags (e.g., convert "synths" to "synth").
 
-### TRANSFORMATION EXAMPLES:
-- Input: `"Kick 01"`, Categories: `["kick", "drum"]` → Output: `"Punchy Acoustic Kick Drum"`
-- Input: `"Dark Bass"`, Categories: `["bass", "synth"]` → Output: `"Dark Analog Synth Bass with Sub Frequency"`
-- Input: `"Synth Pad Chord"`, Categories: `["pad", "synth"]` → Output: `"Warm Atmospheric Synth Pad with Long Release"`
-
-## RULES
-Do not invent information that is not present in the metadata or labels.
-
-### FINAL OUTPUT:
-Provide ONLY the clean new label, without quotation marks, periods, or additional explanations.
+### OUTPUT FORMAT:
+Respond with a valid **JSON Object** containing exactly these keys:
+{{
+  "caption": "The generated descriptive label",
+  "smart_tags": ["tag1", "tag2", "tag3"]
+}}
