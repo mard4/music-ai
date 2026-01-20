@@ -31,7 +31,7 @@ class BaseIngestor(ABC):
             host=settings.QDRANT_CONNECTION_HOST,
             port=settings.QDRANT_PORT
         )
-        self.openai_client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        self.openai_client = OpenAI(api_key=settings.MODEL_API_KEY)
 
     def _prepare_collection(self):
         """Ricrea la collezione su Qdrant."""
@@ -50,7 +50,7 @@ class BaseIngestor(ABC):
         try:
             response = self.openai_client.embeddings.create(
                 input=texts,
-                model=settings.OPENAI_EMBEDDING_MODEL
+                model=settings.MODEL_EMBEDDING_MODEL
             )
             return [data.embedding for data in response.data]
         except Exception as e:

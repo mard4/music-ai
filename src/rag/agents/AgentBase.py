@@ -20,8 +20,8 @@ class AgentBase:
                  tools: Optional[List[Dict]] = None,
                  context: Optional[Dict[str, Any]] = None,
                  agent_name: Optional[str] = None):
-        self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
-        self.model = settings.OPENAI_MODEL
+        self.client = OpenAI(api_key=settings.MODEL_API_KEY)
+        self.model = settings.MODEL_MODEL
         self.tools = tools
         self.logger = logger
         self.context = context or {}

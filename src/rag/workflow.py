@@ -31,25 +31,44 @@ class Workflow:
 
         logger.info("Workflow pronto.")
 
-    async def run(self, user_input: str) -> str:
+    async def run(self, user_input: str, file_path: str = None) -> str:
         """
-        Esegue il flusso principale gestendo il routing della richiesta.
+        Esegue il flusso principale. Se c'è un file_path, forza l'analisi.
         """
-        # STEP 1: Classificazione
-        classification = self.classifier.run(user_input)
-        intent = classification.get("intent")
-        clean_params = classification.get("params")
 
-        logger.info(f"Routing attivo: {intent} | Target: {clean_params}")
-
+        intent = None
+        clean_params = None
         context_data = {
             "user_query": user_input,
-            "intent": intent,
+            "intent": "",
             "results": {}
         }
 
+        # CASO A: L'utente ha caricato un file audio
+        if file_path:
+            logger.info(f"File audio rilevato ({file_path}). Forzatura Intent -> ANALYSIS")
+            intent = "ANALYSIS"
+            # Per l'agente Analyst, il "parametro" è proprio il percorso del file
+            clean_params = file_path
+
+            # Se l'utente non ha scritto nulla, mettiamo un placeholder per il report finale
+            if not user_input.strip():
+                context_data["user_query"] = "Analizza questo file audio e dimmi cosa senti."
+
+        # CASO B: Solo testo, usiamo il Classificatore
+        else:
+            # STEP 1: Classificazione
+            classification = self.classifier.run(user_input)
+            intent = classification.get("intent")
+            clean_params = classification.get("params")
+            logger.info(f"Routing attivo: {intent} | Target: {clean_params}")
+
+        # Aggiorniamo il contesto con l'intent deciso
+        context_data["intent"] = intent
+
         # STEP 2: Branching (Il Bivio)
         if intent == "ANALYSIS":
+            # Passiamo il file_path (che è in clean_params) all'Analyst
             await self.intent_analysis(clean_params, context_data)
 
         elif intent == "RETRIEVAL":
@@ -58,9 +77,11 @@ class Workflow:
         else:
             context_data["results"] = {"error": "Intent not recognized."}
 
-        # STEP 3: Generazione Risposta
+        # STEP 3: Generazione Risposta (LLM)
+        # L'Humanizer ora riceverà in context_data["results"] l'analisi tecnica del file
+        # e genererà una risposta discorsiva.
         final_response = self.humanizer.generate_response(
-            user_query=user_input,
+            user_query=context_data["user_query"],
             intent=intent,
             data=context_data
         )
