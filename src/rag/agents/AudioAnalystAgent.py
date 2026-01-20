@@ -53,7 +53,7 @@ class AudioAnalystAgent(AgentBase):
                     "description": synthesis_result.get("generated_label", "N/A"),
                     "confidence": synthesis_result.get("confidence", "Medium"),
                     "reasoning": synthesis_result.get("reasoning", ""),
-                    "smart_rags": synthesis_result.get("smart_rags", ""),
+                    "smart_tags": synthesis_result.get("smart_tags", ""),
                 },
                 "recommendations": similar_samples
             }
