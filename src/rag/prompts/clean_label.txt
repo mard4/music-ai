@@ -1,8 +1,8 @@
 Analyze this audio file to GENERATE A NEW SEMANTIC LABEL and REFINE ITS TAGS.
 
 ### AVAILABLE INFORMATION:
-1. **ORIGINAL LABEL**: "{label}"
-2. **ORIGINAL TAGS**: {tags}
+1. **ORIGINAL LABEL**: "{{label}}"
+2. **ORIGINAL TAGS**: {{tags}}
 3. **CONTEXT**: Music production sample library.
 
 ### YOUR TASK:
@@ -10,7 +10,7 @@ Perform a deep semantic analysis to produce two outputs: a descriptive **Caption
 
 **PHASE 1: EXTRACTIVE ANALYSIS**
 - Identify the **main sound category** (e.g., Kick, Bass, texture) from the label.
-- Analyze the `ORIGINAL TAGS` to find technical details (e.g., "analog", "dry", "120bpm") and timbral qualities (e.g., "warm", "distorted").
+- If available, analyze the `ORIGINAL TAGS` to find technical details (e.g., "analog", "dry", "120bpm") and timbral qualities (e.g., "warm", "distorted").
 
 **PHASE 2: CAPTION GENERATION**
 - Create a concise, natural description.
@@ -27,7 +27,7 @@ Review the `ORIGINAL TAGS` list and apply this logic to generate `smart_tags`:
 
 ### OUTPUT FORMAT:
 Respond with a valid **JSON Object** containing exactly these keys:
-{{
+{
   "caption": "The generated descriptive label",
   "smart_tags": ["tag1", "tag2", "tag3"]
-}}
+}

@@ -23,8 +23,8 @@ class DSPSearchTool:
             port=settings.QDRANT_PORT
         )
         self.vector_repo = get_vector_repository()
-        self.openai = OpenAI(api_key=settings.OPENAI_API_KEY)
-        self.embedding_model = settings.OPENAI_EMBEDDING_MODEL
+        self.openai = OpenAI(api_key=settings.MODEL_API_KEY)
+        self.embedding_model = settings.MODEL_EMBEDDING_MODEL
 
     async def find_parameters(self, query: str) -> Dict[str, Any]:
         """Cerca i parametri per un singolo concetto semantico."""

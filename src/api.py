@@ -1,9 +1,15 @@
+import shutil
 import sys
 import os
+import uuid
+from typing import Optional, List
+
 import uvicorn
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Form, UploadFile, File
 from pydantic import BaseModel
+from starlette.middleware.cors import CORSMiddleware
+
 sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 sys.path.append(os.path.join(os.path.dirname(__file__)))
 from rag.workflow import Workflow
@@ -27,19 +33,29 @@ async def lifespan(app: FastAPI):
 
 # --- APP SETUP ---
 app = FastAPI(title="AI Sound Assistant API", lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # In produzione metti ["http://localhost:4200"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # Modello dati per la richiesta
 class ChatRequest(BaseModel):
     query: str
+    files: Optional[list] = []
 
 
-
-# Modello dati per la risposta
 class ChatResponse(BaseModel):
-    response: str
-    # Se volessi debuggare anche i dati grezzi, potresti aggiungere un campo qui
+    answer: str
+    context_used: List[dict] = []
+    suggestions: List[str] = []
 
+@app.get("/")
+async def root():
+    return {"status": "online", "message": "AI Sound Assistant is running"}
 
 # --- ENDPOINTS ---
 
@@ -48,22 +64,57 @@ async def root():
     return {"status": "online", "message": "AI Sound Assistant is running"}
 
 
-@app.post("/chat", response_model=ChatResponse)
-async def chat_endpoint(request: ChatRequest):
-    """
-    Endpoint principale per interagire con l'AI.
-    """
+@app.post("/ask", response_model=ChatResponse)
+async def chat_endpoint(
+        query: str = Form(""),
+        files: list[UploadFile] = File(default=[])  # Usa list[UploadFile]
+):
+    temp_file_path = None
     try:
-        logger.info(f"API Request ricevuta: {request.query}")
+        logger.info(f"API Request ricevuta. Query: {query}, Files: {len(files)}")
 
-        wf: Workflow = app.state.workflow
-        final_response = await wf.run(request.query)
+        # 1. GESTIONE SALVATAGGIO FILE SU DISCO
+        if files:
+            # Prendiamo il primo file (per semplicità)
+            uploaded_file = files[0]
 
-        return ChatResponse(response=final_response)
+            # Crea directory temporanea se non esiste
+            temp_dir = os.path.join(os.path.dirname(__file__), "temp_uploads")
+            os.makedirs(temp_dir, exist_ok=True)
+
+            temp_file_path = os.path.join(temp_dir, uploaded_file.filename)
+
+            logger.info(f"Salvataggio file temporaneo in: {temp_file_path}")
+
+            # Scrittura dei byte su disco
+            with open(temp_file_path, "wb") as buffer:
+                shutil.copyfileobj(uploaded_file.file, buffer)
+
+        # 2. ESECUZIONE WORKFLOW
+        wf = app.state.workflow
+
+        # Passiamo sia la query testuale che il path del file (se esiste)
+        final_response = await wf.run(user_input=query, file_path=temp_file_path)
+
+        return ChatResponse(
+            answer=str(final_response),
+            context_used=[],
+            suggestions=[]
+        )
 
     except Exception as e:
         logger.error(f"Errore API: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+    finally:
+        # 3. PULIZIA (Opzionale ma consigliata)
+        # Rimuovi il file temporaneo dopo aver generato la risposta per non intasare il server
+        if temp_file_path and os.path.exists(temp_file_path):
+            try:
+                os.remove(temp_file_path)
+                logger.info(f"File temporaneo rimosso: {temp_file_path}")
+            except Exception as cleanup_error:
+                logger.warning(f"Impossibile rimuovere file temporaneo: {cleanup_error}")
 
 
 # --- ENTRY POINT ---

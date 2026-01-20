@@ -16,7 +16,7 @@ class RetrievalTool:
     def __init__(self):
         # Inietta il repository astratto invece del client concreto
         self.vector_repo = get_vector_repository()
-        self.client_openai = OpenAI(api_key=settings.OPENAI_API_KEY)
+        self.client_openai = OpenAI(api_key=settings.MODEL_API_KEY)
 
 
     async def search_similar_audio_text_vector(self, query_text: str) -> List[Dict[str, Any]]:
@@ -28,7 +28,7 @@ class RetrievalTool:
         try:
             emb_res = self.client_openai.embeddings.create(
                 input=query_text,
-                model=settings.OPENAI_EMBEDDING_MODEL
+                model=settings.MODEL_EMBEDDING_MODEL
             )
             vector = emb_res.data[0].embedding
 
@@ -66,7 +66,7 @@ class RetrievalTool:
             "score": res.score,
             "description": res.label,
             "tags": res.categories,
-            "quality_score": res.metadata.get("clap_quality")
+            "quality": res.metadata.get("clap_quality")
             # "quality": res.metadata.get("clap_score", 0.0),
             # "bpm": res.metadata.get("bpm"),
             # "key": res.metadata.get("key")

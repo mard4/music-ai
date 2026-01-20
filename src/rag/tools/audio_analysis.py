@@ -3,6 +3,7 @@ import re
 import json  # <--- Serve per il parsing
 from typing import List, Dict, Any, Optional
 import torch
+from jinja2 import Template
 from torch.nn.functional import cosine_similarity
 from openai import OpenAI
 
@@ -17,11 +18,11 @@ class LabelEnricherTool:
     """
 
     def __init__(self, clap_handler: Optional[CLAPModelHandler] = None):
-        self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
-        self.model = settings.OPENAI_MODEL
+        self.client = OpenAI(api_key=settings.MODEL_API_KEY)
+        self.model = settings.MODEL_MODEL
         self.clap = clap_handler or create_clap_model(pretrained=True)
         self.clean_prompt = read_prompt("clean_label.txt")
-        self.synthesis_prompt = read_prompt("analysis_synthesis.txt.txt")
+        self.synthesis_prompt = read_prompt("analysis_synthesis.txt")
 
     def enrich_and_verify(self, filename: str, audio_path: str, original_tags: List[str] = None) -> Dict[str, Any]:
         """
@@ -56,7 +57,7 @@ class LabelEnricherTool:
     def _generate_metadata(self, label: str, tags: List[str]) -> Dict[str, Any]:
         """Chiede all'LLM di generare caption e filtrare i tag."""
         try:
-            prompt = self.clean_prompt.format(
+            prompt = Template(self.clean_prompt).render(
                 label=label,
                 tags=", ".join(tags)
             )
@@ -107,18 +108,23 @@ class LabelEnricherTool:
         2. Validazione CLAP (Hallucination Check) usando il metodo condiviso.
         """
         # 1. Costruzione Contesto per LLM
+        if neighbors:
+            logger.info(f"DEBUG STRUCTURE - First Neighbor: {neighbors[0]}")
+        else:
+            logger.warning("Neighbors list is empty!")
+
         context_text = ""
         for i, n in enumerate(neighbors):
-            label = n.get('description') or n.get('label') or "N/A"
-            tags = n.get('tags') or []
-            score_val = n.get('score', 0)
+            label = n.get('label') or n.get('description') or "N/A"
+            tags = n.get('ai_tags') or n.get('tags') or []
+            score_val = n.get("clap_score") or n.get('score', 0)
             context_text += (
                 f"{i + 1}. Label: '{label}' | Tags: {tags} | Sim: {score_val:.4f}\n"
             )
 
         # 2. Chiamata LLM (Sintesi)
         try:
-            full_prompt = self.synthesis_prompt.format(similar_samples_context=context_text)
+            full_prompt = Template(self.synthesis_prompt).render(similar_samples_context=context_text)
 
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -126,7 +132,7 @@ class LabelEnricherTool:
                     {"role": "system", "content": "You are an expert audio taxonomist. Output valid JSON."},
                     {"role": "user", "content": full_prompt}
                 ],
-                temperature=0.2,  # Bassa temperatura per maggiore precisione
+                temperature=0.2,
                 response_format={"type": "json_object"}
             )
 

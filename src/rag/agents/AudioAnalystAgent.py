@@ -1,7 +1,7 @@
 import os
 import logging
 from typing import Dict, Any
-
+from jinja2 import Template
 from rag.agents.AgentBase import AgentBase
 from rag.clap.model_handler import create_clap_model
 from rag.tools.retrieval import RetrievalTool
@@ -26,10 +26,10 @@ class AudioAnalystAgent(AgentBase):
         filename = os.path.basename(clean_path)
 
         try:
-            # 1. Genera vettore CLAP
+            # Genera vettore CLAP
             audio_vector = self.ear.get_audio_embedding([clean_path])[0].tolist()
 
-            # 2. Usa il tool corretto
+            # tool ricerca audio_vector
             similar_samples = await self.retrieval_tool.search_similar_audio_audio_vector(
                 vector=audio_vector,
             )
@@ -44,11 +44,18 @@ class AudioAnalystAgent(AgentBase):
                 neighbors=similar_samples
             )
 
+            logger.debug(f"Synthesis result: {synthesis_result}")
+
             return {
                 "source": "LOCAL_FILE_ANALYSIS",
-                "target_file": filename,
-                "generated_analysis": synthesis_result,
-                "evidence": similar_samples
+                "filename": filename,
+                "analysis": {
+                    "description": synthesis_result.get("generated_label", "N/A"),
+                    "confidence": synthesis_result.get("confidence", "Medium"),
+                    "reasoning": synthesis_result.get("reasoning", ""),
+                    "smart_rags": synthesis_result.get("smart_rags", ""),
+                },
+                "recommendations": similar_samples
             }
 
         except Exception as e:

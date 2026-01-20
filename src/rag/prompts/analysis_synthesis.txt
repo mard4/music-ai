@@ -2,18 +2,31 @@ You are an expert audio analyst.
 We are analyzing an unknown audio file (Target).
 The vector analysis system (CLAP) has determined that this file is ACOUSTICALLY SIMILAR to the following samples in the database:
 
-{similar_samples_context}
+{{ similar_samples_context }}
 
 ### YOUR TASK:
-Use the “Neighbor Consensus” logic to label the unknown file.
-1. Analyze the Labels and Tags of the neighboring files.
-2. Identify recurring characteristics (e.g., if 4 out of 5 are “Distorted Kick,” the target is a Distorted Kick).
-3. Ignore any outliers that clearly have nothing to do with it.
+Use the “Neighbor Consensus” logic to label the unknown file. You must strictly adhere to the provided data.
+
+1. **Analyze Labels & Tags**: Examine the `Label` and `Tags` of the neighboring files provided in the context above.
+2. **Identify Consensus**: If multiple neighbors share specific keywords (e.g., "Bouncy", "Bass"), apply them to the target.
+
+### STRICT DATA CONSTRAINTS:
+1. **SMART TAGS (EXTRACTIVE ONLY)**:
+   - You must select tags **ONLY** from the `Tags` lists provided in the neighbors context.
+   - **DO NOT INVENT NEW TAGS.** If a keyword does not appear in the provided `Tags` lists, do not use it.
+   - Prioritize tags that appear in multiple neighbors.
+
+2. **CONFIDENCE SCORE**:
+   - Determine the confidence level based on the `clap_score` values and label consistency.
+   - **High**: Neighbors have very similar labels/tags AND `clap_score` is generally > 0.45.
+   - **Medium-High**: Neighbors share some characteristics OR `clap_score` is between 0.35 and 0.45.
+   - **Medium**: Neighbors share some characteristics OR `clap_score` is between 0.25 and 0.35.
+   - **Low**: Neighbors are disparate (low consensus) OR `clap_score` < 0.25.
 
 ### RESPONSE FORMAT (JSON):
 {
-    "generated_label": "A concise and precise description (e.g., 'Punchy Analog Kick Drum')",
+    "generated_label": "A concise description derived strictly from neighbor labels",
     "confidence": "High/Medium/Low",
     "smart_tags": ["tag1", "tag2", "tag3"],
-    "reasoning": "Brief explanation of why (e.g., 'All neighbors are analog kicks')"
+    "reasoning": "Brief explanation citing specific neighbors (e.g. '3/4 neighbors contain tag 'bouncy'')"
 }
