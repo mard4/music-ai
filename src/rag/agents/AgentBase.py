@@ -17,7 +17,7 @@ class AgentBase:
 
     def __init__(self,
                  prompt_file: Optional[str] = None,
-                 tools: Optional[List[Dict]] = None,
+                 tools: Optional[List[Any]] = None,
                  context: Optional[Dict[str, Any]] = None,
                  agent_name: Optional[str] = None):
         self.client = OpenAI(api_key=settings.MODEL_API_KEY)

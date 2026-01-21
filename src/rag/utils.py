@@ -2,6 +2,8 @@ import logging
 import shutil
 from pathlib import Path
 import os
+from typing import List, Dict, Any
+
 from bson import ObjectId
 from core.infrastructure.database.dependecies import get_gridfs_handler
 
@@ -27,6 +29,8 @@ def read_prompt(filename: str) -> str:
     except Exception as e:
         logger.error(f"Error reading prompt {filename}: {e}")
         return ""
+
+
 
 class FoundSimilarAudios():
     def __init__(self):

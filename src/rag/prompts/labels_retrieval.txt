@@ -1,0 +1,35 @@
+{% if samples %}
+<div class="samples-container" style="margin-top: 20px;">
+    <h3 style="color: #2c3e50; font-size: 1.1em; border-bottom: 2px solid #ecf0f1; padding-bottom: 8px;">
+        Found Samples ({{ samples|length }})
+    </h3>
+
+    <ul style="list-style: none; padding-left: 0;">
+    {% for sample in samples %}
+        <li style="background: #ffffff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 10px; margin-bottom: 8px; transition: transform 0.2s;">
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                <span style="font-weight: 600; color: #34495e; font-size: 0.95em;">
+                    {{ sample.original_filename }}
+                </span>
+                {% if sample.score %}
+                <span style="font-size: 0.75em; background: #e8f5e9; color: #2e7d32; padding: 2px 8px; border-radius: 12px; font-weight: bold;">
+                    {{ "%.0f"|format(sample.score * 100) }}%
+                </span>
+                {% endif %}
+            </div>
+
+            <div style="font-size: 0.8em; color: #7f8c8d; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+               🏷 {{ sample.tags|join(', ') }}
+            </div>
+
+            {% if sample.web_url %}
+                <audio controls src="{{ sample.web_url }}" style="width: 100%; height: 28px; border-radius: 4px;"></audio>
+            {% else %}
+                <div style="font-size: 0.8em; color: #e74c3c;">⚠️ Preview not available</div>
+            {% endif %}
+        </li>
+    {% endfor %}
+    </ul>
+</div>
+{% endif %}
