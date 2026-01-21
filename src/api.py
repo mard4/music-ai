@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Form, UploadFile, File
 from pydantic import BaseModel
 from starlette.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 sys.path.append(os.path.join(os.path.dirname(__file__)))
@@ -41,6 +42,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+os.makedirs("public_audio", exist_ok=True)
+app.mount("/public", StaticFiles(directory="public_audio"), name="public")
 
 # Modello dati per la richiesta
 class ChatRequest(BaseModel):

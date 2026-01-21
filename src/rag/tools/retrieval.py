@@ -63,11 +63,11 @@ class RetrievalTool:
         """Helper per formattare l'output standard verso gli agenti."""
         return {
             "filename": res.filename,
+            "original_filename": res.metadata.get("real_filename"),
             "score": res.score,
             "description": res.label,
             "tags": res.categories,
-            "quality": res.metadata.get("clap_quality")
-            # "quality": res.metadata.get("clap_score", 0.0),
-            # "bpm": res.metadata.get("bpm"),
-            # "key": res.metadata.get("key")
+            "quality": res.metadata.get("clap_quality"),
+            "mongo_id": res.payload.get("mongo_id"),
+            "file_path": res.payload.get("source")
         }
