@@ -31,17 +31,19 @@ class IntentClassifierAgent(AgentBase):
             }
         )
 
-    def run(self, user_input: str) -> Dict[str, str]:
-        self.logger.info(f"Classificando intento per: '{user_input}'")
+    def run(self, user_input: str, has_context: bool = False) -> Dict[str, str]:
+        self.logger.info(f"Classificando intento per: '{user_input}' (Context Available: {has_context})")
 
-        dynamic_content = self.render_prompt(user_query=user_input)
+        dynamic_content = self.render_prompt(
+            user_query=user_input,
+            has_context=has_context
+        )
 
         messages = [
             {"role": "system", "content": dynamic_content},
             {"role": "user", "content": user_input}
         ]
 
-        # La BaseAgent gestisce il JSON parsing
         result = self.call_llm(messages, temperature=0.0, json_mode=True)
 
         if result:

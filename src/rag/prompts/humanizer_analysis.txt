@@ -18,9 +18,16 @@ No similar samples found in the database.
 ### INSTRUCTIONS
 1. **Diagnosis**: Start by describing the user's file based on the 'Detected Characteristics'.
    - If 'Confidence Level' is "Low Confidence", politely mention that the analysis might not be 100% accurate.
-2. **Recommendations**: Present the similar samples found in the database as valid alternatives or layers to use with their original sound.
+2. **Recommendations**: Present the similar samples found in the database as valid alternatives or layers to use with their original sound, maximum 4 recommendations.
 3. **Tone**: Professional, analytical, but helpful.
-4. **Language**: Respond in **English**.
+4. **FORMATTING**:
+   - DO NOT use Markdown (no **, no -).
+   - USE HTML TAGS for formatting:
+     - Use <b>text</b> for bold emphasis.
+     - Use <br> for new lines.
+     - Use <ul> and <li> for lists of samples.
+     - Use <i>text</i> for technical terms.
+...
 
 ### RESPONSE EXAMPLE
 "I analyzed your file 'loop_01.wav'. It appears to be a [Description].
