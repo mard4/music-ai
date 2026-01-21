@@ -34,10 +34,6 @@ class EnrichedCollectionIngestor(BaseIngestor):
 
         # Tool AI per generazione testi
         self.enricher = LabelEnricherTool()
-
-        # Modello CLAP per generazione vettore audio
-        # Nota: create_clap_model è un Singleton, quindi se l'enricher lo usa già,
-        # non verrà ricaricato in memoria due volte.
         self.clap = create_clap_model()
 
     def _prepare_collection(self):
