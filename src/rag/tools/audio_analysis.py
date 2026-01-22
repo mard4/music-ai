@@ -117,9 +117,11 @@ class LabelEnricherTool:
         for i, n in enumerate(neighbors):
             label = n.get('label') or n.get('description') or "N/A"
             tags = n.get('ai_tags') or n.get('tags') or []
-            score_val = n.get("clap_score") or n.get('score', 0)
+            similarity_score = n.get('score', 0.0)
+            quality_score = n.get('clap_score', 0.0)
             context_text += (
-                f"{i + 1}. Label: '{label}' | Tags: {tags} | Sim: {score_val:.4f}\n"
+                f"{i + 1}. Label: '{label}' | Tags: {tags} | "
+                f"Sim: {similarity_score:.4f} | LabelQuality: {quality_score:.2f}\n"
             )
 
         # 2. Chiamata LLM (Sintesi)
@@ -147,15 +149,15 @@ class LabelEnricherTool:
                 "reasoning": str(e)
             }
 
-        # 3. Validazione CLAP (Hallucination Check) - RIUTILIZZO TUO METODO
+        # 3. Validazione CLAP (Hallucination Check)
         generated_label = result_json.get("generated_label", "")
 
         if generated_label and audio_path:
             # Qui riutilizziamo esattamente la tua logica torch/cosine_similarity
-            is_hallucination, score = self._check_hallucination(generated_label, audio_path)
+            is_hallucination, label_clap_score = self._check_hallucination(generated_label, audio_path)
 
             # Arricchiamo il JSON con i dati di verifica
-            result_json["clap_score"] = round(score, 4)
+            result_json["clap_score"] = round(label_clap_score, 4)
             result_json["is_hallucination"] = is_hallucination
 
             if is_hallucination:
