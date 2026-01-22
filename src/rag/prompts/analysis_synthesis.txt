@@ -8,7 +8,12 @@ The vector analysis system (CLAP) has determined that this file is ACOUSTICALLY 
 Use the “Neighbor Consensus” logic to label the unknown file. You must strictly adhere to the provided data.
 
 1. **Analyze Labels & Tags**: Examine the `Label` and `Tags` of the neighboring files provided in the context above.
-2. **Identify Consensus**: If multiple neighbors share specific keywords (e.g., "Bouncy", "Bass"), apply them to the target.
+2. **Identify Consensus**:
+- MUST Prioritize neighbors with high **similarity_score** (Similarity > 0.56).
+- MUST Be wary of neighbors with low **LabelQuality** (< 0.1), their labels may be wrong even if the sound is similar.
+- If multiple neighbors share specific keywords (e.g., "Bouncy", "Bass"), apply them to the target.
+
+
 
 ### STRICT DATA CONSTRAINTS:
 1. **SMART TAGS (EXTRACTIVE ONLY)**:
@@ -17,11 +22,11 @@ Use the “Neighbor Consensus” logic to label the unknown file. You must stric
    - Prioritize tags that appear in multiple neighbors.
 
 2. **CONFIDENCE SCORE**:
-   - Determine the confidence level based on the `clap_score` values and label consistency.
-   - **High**: Neighbors have very similar labels/tags AND `clap_score` is generally > 0.45.
-   - **Medium-High**: Neighbors share some characteristics OR `clap_score` is between 0.35 and 0.45.
-   - **Medium**: Neighbors share some characteristics OR `clap_score` is between 0.25 and 0.35.
-   - **Low**: Neighbors are disparate (low consensus) OR `clap_score` < 0.25.
+   - Determine the confidence level based on the `similarity_score` values and label consistency.
+   - **High**: Neighbors have very similar labels/tags AND `similarity_score` is generally > 0.45.
+   - **Medium-High**: Neighbors share some characteristics OR `similarity_score` is between 0.35 and 0.45.
+   - **Medium**: Neighbors share some characteristics OR `similarity_score` is between 0.25 and 0.35.
+   - **Low**: Neighbors are disparate (low consensus) OR `similarity_score` < 0.25.
 
 ### RESPONSE FORMAT (JSON):
 {
