@@ -22,7 +22,7 @@ class AudioMetadata(BaseModel):
     split: Optional[str] = Field(None, description="Split del dataset")
     original_split: Optional[str] = Field(None, description="Split originale")
     main_category: str = Field(None, description="Nome del main category")
-
+    main_tag: str = Field(None, description="Nome del main tag")
 
 class AudioFile(BaseModel):
     """File audio completo con metadata."""

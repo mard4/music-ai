@@ -35,7 +35,7 @@ class QdrantVectorRepository(VectorStoreRepository):
                 payload = point.payload or {}
 
                 display_name = payload.get("label", payload.get("original_filename", "Unknown Sample"))
-                smart_tags = payload.get("ai_tags", payload.get("original_tags", []))
+                ai_tags = payload.get("ai_tags", payload.get("original_tags", []))
                 quality_score = payload.get("clap_score", 0.0)
 
                 mapped_results.append(AudioSearchResult(
@@ -44,7 +44,7 @@ class QdrantVectorRepository(VectorStoreRepository):
                     payload=payload,
                     filename=display_name,
                     label=payload.get("label", ""),
-                    categories=smart_tags,
+                    categories=ai_tags,
                     metadata={"clap_quality": quality_score, "real_filename": payload.get("original_filename"), "original_tags": payload.get("original_tags")}
                 ))
             return mapped_results

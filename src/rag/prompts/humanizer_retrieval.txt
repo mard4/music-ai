@@ -7,12 +7,6 @@ User Query: "{{ user_query }}"
 
 ### RESPONSE FORMAT (HTML)
 
-{% if results.dsp_html %}
-    <div class="dsp-section" style="margin-bottom: 25px;">
-        {{ results.dsp_html }}
-    </div>
-{% endif %}
-
 {% if results.found_samples %}
 <div class="samples-container">
     <h3 style="color: #2c3e50; border-bottom: 2px solid #ecf0f1; padding-bottom: 8px;">

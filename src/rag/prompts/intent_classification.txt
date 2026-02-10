@@ -6,9 +6,6 @@ Your task is to analyze the user's request and extract "intent" and "params".
 Previous File Analysis Available: {{ has_context }}
 (If "True", you hold semantic information about a previously analyzed file).
 
-## SOURCE OF TRUTH (Descriptors)
-{{ descriptors }}
-
 ## OUTPUT TEMPLATE (JSON)
 { "intent": "...", "params": "..." }
 

@@ -194,7 +194,8 @@ def get_qdrant_client() -> AsyncQdrantClient:
     """Returns cached Async Qdrant Client."""
     return AsyncQdrantClient(
         host=settings.QDRANT_CONNECTION_HOST,
-        port=settings.QDRANT_PORT
+        port=settings.QDRANT_PORT,
+        timeout=100
     )
 
 
