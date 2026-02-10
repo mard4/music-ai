@@ -32,6 +32,6 @@ Use the “Neighbor Consensus” logic to label the unknown file. You must stric
 {
     "generated_label": "A concise description derived strictly from neighbor labels",
     "confidence": "High/Medium/Low",
-    "smart_tags": ["tag1", "tag2", "tag3"],
+    "ai_tags": ["tag1", "tag2", "tag3"],
     "reasoning": "Brief explanation citing specific neighbors (e.g. '3/4 neighbors contain tag 'bouncy'')"
 }

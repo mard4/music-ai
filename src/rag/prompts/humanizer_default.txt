@@ -8,7 +8,6 @@ The user's latest input did not trigger a specific Analysis or Retrieval workflo
 You can perform the following tasks:
 1. **Audio Analysis**: "Analyze this loop", "What is this sound?" (User must provide a file path).
 2. **Sample Retrieval**: "Find me a distorted kick", "Search for a warm pad".
-3. **Sound Design**: "How do I make a sound warmer?", "Give me EQ settings for a crispy snare".
 
 ### INSTRUCTIONS
 1. If the user is just greeting (e.g., "Hello"), answer politely.

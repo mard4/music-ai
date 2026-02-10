@@ -24,42 +24,53 @@ class LabelEnricherTool:
         self.clean_prompt = read_prompt("clean_label.txt")
         self.synthesis_prompt = read_prompt("analysis_synthesis.txt")
 
-    def enrich_and_verify(self, filename: str, audio_path: str, original_tags: List[str] = None) -> Dict[str, Any]:
+    def enrich_and_verify(self,
+                          filename: str,
+                          audio_path: str,
+                          label: Optional[str] = None,
+                          main_category: Optional[str] = None,
+                          original_tags: List[str] = None) -> Dict[str, Any]:
         """
         Pipeline:
         1. Analisi LLM (Caption + Tag Filtering)
         2. Validazione CLAP
         """
-        clean_name = filename.replace(".wav", "").replace(".mp3", "")
 
         # Se non passiamo tag dal DB, usiamo quelli estratti dal nome come fallback
         if not original_tags:
-            original_tags = re.split(r'[-_\s]+', clean_name)
+            original_tags = re.split(r'[-_\s]+', label)
 
         # 1. Generazione (Caption + Smart Tags)
-        llm_result = self._generate_metadata(clean_name, original_tags)
+        llm_result = self._generate_metadata(label=label,
+                                             tags=original_tags,
+                                             main_category=main_category,
+                                             )
 
-        caption = llm_result.get("caption", clean_name)
-        smart_tags = llm_result.get("smart_tags", original_tags)
+        new_label = llm_result.get("caption", label)
+        ai_tags = llm_result.get("ai_tags", original_tags)
 
         # 2. Validazione CLAP (Hallucination Check)
-        is_hallucination, score = self._check_hallucination(caption, audio_path)
+        is_hallucination, score = self._check_hallucination(new_label=new_label, original_label=label, audio_path=audio_path)
 
         return {
-            "caption": caption,
-            "smart_tags": smart_tags,
+            "caption": new_label,
+            "ai_tags": ai_tags,
             "original_tags": original_tags,
             "is_hallucination": is_hallucination,
             "clap_score": score,
             "status": "Verified" if not is_hallucination else "Low Confidence"
         }
 
-    def _generate_metadata(self, label: str, tags: List[str]) -> Dict[str, Any]:
+    def _generate_metadata(self,
+                           label: str,
+                           main_category: Optional[str],
+                           tags: List[str]) -> Dict[str, Any]:
         """Chiede all'LLM di generare caption e filtrare i tag."""
         try:
             prompt = Template(self.clean_prompt).render(
                 label=label,
-                tags=", ".join(tags)
+                tags=", ".join(tags),
+                main_category=main_category
             )
 
             response = self.client.chat.completions.create(
@@ -68,7 +79,7 @@ class LabelEnricherTool:
                     {"role": "system", "content": "You are an expert audio taxonomist. Output only JSON."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.3,
+                temperature=0.2,
                 response_format={"type": "json_object"}
             )
 
@@ -77,15 +88,17 @@ class LabelEnricherTool:
 
         except Exception as e:
             logger.error(f"Enrichment LLM Error: {e}")
-            # Fallback in caso di errore
-            return {"caption": label, "smart_tags": tags}
+            return {"caption": label, "ai_tags": tags}
 
-    def _check_hallucination(self, caption: str, audio_path: str, threshold: float = 0.25):
+    def _check_hallucination(self,
+                             audio_path: str,
+                             new_label: str,
+                             original_label: str, threshold: float = 0.25):
         try:
             if not audio_path: return False, 0.0
 
             audio_embed = self.clap.get_audio_embedding([audio_path])
-            text_embed = self.clap.get_text_embedding([caption])
+            text_embed = self.clap.get_text_embedding([new_label])
 
             if len(audio_embed) == 0 or len(text_embed) == 0: return False, 0.0
 
@@ -100,7 +113,11 @@ class LabelEnricherTool:
             logger.warning(f"CLAP Check skipped: {e}")
             return False, 0.0
 
-    def predict_label_from_neighbors(self, filename: str, audio_path: str, neighbors: List[Dict[str, Any]]) -> Dict[
+    def predict_label_from_neighbors(self,
+                                     filename: str,
+                                     original_label: str,
+                                     audio_path: str,
+                                     neighbors: List[Dict[str, Any]]) -> Dict[
         str, Any]:
         """
         PIPELINE REVERSE-RAG (Audio-First):
@@ -152,9 +169,8 @@ class LabelEnricherTool:
         # 3. Validazione CLAP (Hallucination Check)
         generated_label = result_json.get("generated_label", "")
 
-        if generated_label and audio_path:
-            # Qui riutilizziamo esattamente la tua logica torch/cosine_similarity
-            is_hallucination, label_clap_score = self._check_hallucination(generated_label, audio_path)
+        if generated_label and original_label:
+            is_hallucination, label_clap_score = self._check_hallucination(new_label=generated_label, original_label=original_label, audio_path=audio_path)
 
             # Arricchiamo il JSON con i dati di verifica
             result_json["clap_score"] = round(label_clap_score, 4)

@@ -79,7 +79,7 @@ class Settings(BaseSettings):
     QDRANT_PORT: int = Field(default=6333)
     QDRANT_AUDIO_COLLECTION_NAME: str = Field(default="audio_vectors")
     QDRANT_PARAMETERS_COLLECTION_NAME: str = Field(default="socialfx_vectors")
-    QDRANT_ENRICHED_COLLECTION_NAME: str = Field(default="audio_enriched_v2")
+    QDRANT_ENRICHED_COLLECTION_NAME: str = Field(default="audio_enriched_v3")
 
     # External Datasets
     socialfx_dataset_name: str = "seungheondoh/socialfx-original"

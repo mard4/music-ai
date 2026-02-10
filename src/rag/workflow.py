@@ -5,7 +5,6 @@ from rag.agents.AudioAnalystAgent import AudioAnalystAgent
 from rag.agents.HumanizerAgent import HumanizerAgent
 from rag.agents.LabelEnricherAgent import LabelEnricher
 from rag.agents.RetrievalAgent import AudioRetriever
-from rag.agents.SoundDesignerAgent import SoundDesignerAgent
 
 from rag.utils import logger, FoundSimilarAudios
 
@@ -26,10 +25,7 @@ class Workflow:
         # 4. UNIVERSAL FINDER: Cerca sample (Audio o Testo)
         self.audio_retriever = AudioRetriever()
 
-        # 5. DSP ENGINEER: Trova parametri tecnici
-        self.sound_designer = SoundDesignerAgent()
-
-        # 6. VOCE: Genera la risposta finale
+        # 5. VOCE: Genera la risposta finale
         self.humanizer = HumanizerAgent()
 
         self.memory = {
@@ -88,7 +84,7 @@ class Workflow:
 
             # Gestione contesto
             if intent == "RETRIEVAL" and search_query == "USE_LAST_ANALYSIS" and has_memory:
-                last_tags = self.memory["last_analysis"].get("smart_tags", [])
+                last_tags = self.memory["last_analysis"].get("ai_tags", [])
                 search_query = " ".join(last_tags)
                 pipeline_results["is_contextual"] = True
 
@@ -120,31 +116,13 @@ class Workflow:
         pipeline_results["analysis"] = {
             "description": synthesis.get("generated_label", "N/A"),
             "confidence": synthesis.get("confidence", "Medium"),
-            "smart_tags": synthesis.get("smart_tags", []),
+            "ai_tags": synthesis.get("ai_tags", []),
             "reasoning": synthesis.get("reasoning", "")
         }
 
         # Se era un'analisi file, aggiorniamo la memoria a lungo termine
         if file_path:
             self.memory["last_analysis"] = pipeline_results["analysis"]
-
-        # --- FASE 3: SMART DSP TRIGGER (Come lo faccio?) ---
-        # Usiamo i tag generati dall'LLM (synthesis) per cercare la ricetta,
-        # INVECE di usare l'input utente grezzo.
-
-        smart_tags = synthesis.get("smart_tags", [])
-
-        if smart_tags:
-            dsp_query = ", ".join(smart_tags)
-        else:
-            # Fallback sull'input utente se la sintesi fallisce o non trova nulla
-            dsp_query = synthesis.get("generated_label") or user_input
-
-        logger.info(f"Triggering DSP Search con tag sintetici: '{dsp_query}'")
-        dsp_recipe = await self.sound_designer.run(dsp_query)
-
-        pipeline_results["dsp_recipe"] = dsp_recipe
-        pipeline_results["dsp_html"] = dsp_recipe.get("html_output", "")  # Per Humanizer
 
         # --- FASE 4: HUMANIZER (Presentazione) ---
 

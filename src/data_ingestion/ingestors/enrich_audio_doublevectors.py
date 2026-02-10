@@ -2,6 +2,7 @@ import logging
 import os
 import tempfile
 import asyncio
+import time
 from typing import List
 
 from data_ingestion.ingestors.base import BaseIngestor
@@ -12,7 +13,6 @@ from core.infrastructure.database.dependecies import (
     get_gridfs_handler
 )
 from rag.tools.audio_analysis import LabelEnricherTool
-# Importiamo il Singleton CLAP
 from rag.clap.model_handler import create_clap_model
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -32,7 +32,6 @@ class EnrichedCollectionIngestor(BaseIngestor):
         collection_name = settings.QDRANT_ENRICHED_COLLECTION_NAME
         super().__init__(collection_name=collection_name)
 
-        # Tool AI per generazione testi
         self.enricher = LabelEnricherTool()
         self.clap = create_clap_model()
 
@@ -43,14 +42,13 @@ class EnrichedCollectionIngestor(BaseIngestor):
         if self.qdrant.collection_exists(self.collection_name):
             self.qdrant.delete_collection(self.collection_name)
             logger.info(f"Collezione '{self.collection_name}' esistente eliminata.")
-
-        # Configurazione Qdrant per supportare sia ricerca testuale che audio
+            time.sleep(2)
         self.qdrant.create_collection(
             collection_name=self.collection_name,
             vectors_config={
                 "text_vector": VectorParams(size=1536, distance=Distance.COSINE),  # OpenAI
                 "audio_vector": VectorParams(size=512, distance=Distance.COSINE),  # CLAP (HTSAT-base)
-            }
+            },
         )
         logger.info(f"Collezione '{self.collection_name}' creata con Dual Vector Support.")
 
@@ -73,7 +71,10 @@ class EnrichedCollectionIngestor(BaseIngestor):
             try:
                 gridfs_id = doc.gridfs_file_id
                 original_filename = doc.sample.file_name
+                original_label = doc.sample.label
                 original_tags = doc.metadata.categories
+                main_category = doc.metadata.main_category
+                main_tag = doc.metadata.main_tag
 
                 if not gridfs_id: continue
 
@@ -92,12 +93,14 @@ class EnrichedCollectionIngestor(BaseIngestor):
                 logger.info(f"[{i + 1}/{len(docs)}] Analisi: {original_filename}")
                 result = self.enricher.enrich_and_verify(
                     filename=original_filename,
+                    label = original_label,
+                    main_category=main_category,
                     audio_path=tmp_path,
                     original_tags=original_tags
                 )
 
                 new_label = result["caption"]
-                smart_tags = result["smart_tags"]
+                ai_tags = result["ai_tags"]
                 clap_score = result["clap_score"]
 
                 # 2. Generazione Embedding Testuale (OpenAI) sulla Label generata
@@ -125,17 +128,19 @@ class EnrichedCollectionIngestor(BaseIngestor):
                 point = PointStruct(
                     id=i + 1,
                     vector={
-                        "text_vector": text_vec,  # Per ricerca: "Trovami un basso punchy"
-                        "audio_vector": audio_vec  # Per ricerca: "Trova file simili a questo audio"
+                        "text_vector": text_vec,
+                        "audio_vector": audio_vec
                     },
                     payload={
                         "original_filename": original_filename,
-                        "label": new_label,  # Label Migliorata dall'AI
-                        "clap_score_rounded": round(clap_score, 1),   # Quanto l'AI è sicura della label
-                        "clap_score": round(clap_score, 2),
                         "mongo_id": str(gridfs_id),
+                        "original_label": original_label,
                         "original_tags": original_tags,
-                        "ai_tags": smart_tags
+                        "main_category": main_category,
+                        "main_tag": main_tag,
+                        "ai_label": new_label,  # Label Migliorata dall'AI
+                        "ai_tags": ai_tags,
+                        "clap_score": round(clap_score, 5)
                     }
                 )
                 points_batch.append(point)

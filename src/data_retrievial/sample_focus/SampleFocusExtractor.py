@@ -74,7 +74,11 @@ class SampleFocusExtractor:
             logging.debug(f"Errore nell'estrazione: {e}")
         return None
 
-    async def download_and_save_to_mongo(self, mp3_url: str, page_url: str,
+    async def download_and_save_to_mongo(self,
+                                         mp3_url: str,
+                                         page_url: str,
+                                         instr: str,
+                                         timbre: str,
                                          metadata: Dict) -> bool:
         """Scarica e salva usando GridFSHandler e Repository."""
         try:
@@ -92,13 +96,15 @@ class SampleFocusExtractor:
                         audio_data += chunk
 
                 clean_main_category = None
+                clean_main_tag = None
                 extra_tags = []
 
                 if self.category_url:
                     # Parsa l'URL per separare il percorso dai parametri
                     parsed = urlparse(self.category_url)
                     # Prende solo l'ultima parte del path come categoria (pulisce da ?tags[]=...)
-                    clean_main_category = parsed.path.rstrip("/").split("/")[-1]
+                    #clean_main_category = parsed.path.rstrip("/").split("/")[-1]
+
                     # Estrae eventuali tag nascosti nei parametri dell'URL
                     query_params = parse_qs(parsed.query)
                     extra_tags = [t.lower().strip() for t in query_params.get('tags[]', [])]
@@ -119,7 +125,9 @@ class SampleFocusExtractor:
                     bpm=metadata.get('bpm'),
                     duration=metadata.get('duration'),
                     key=metadata.get('key'),
-                    main_category=clean_main_category
+                    main_category=instr,
+                    main_tag=timbre,
+                    original_split='train'
                 )
 
                 # Costruiamo l'oggetto AudioFile parziale per usarlo nei metadata di GridFS
@@ -147,22 +155,33 @@ class SampleFocusExtractor:
             logging.error(f"Errore nel processo di salvataggio: {e}")
             return False
 
-    async def process_single_sample(self, page_url: str) -> bool:
+    async def process_single_sample(self,
+                                    page_url: str,
+                                    instr: str,
+                                    timbre: str) -> bool:
         """Processa un singolo sample."""
         logging.info(f"Processing: {page_url}")
         mp3_url = self.extract_mp3_url(page_url)
         if mp3_url:
             metadata = extract_sample_metadata(page_url, self.scraper)
             if metadata:
-                return await self.download_and_save_to_mongo(mp3_url, page_url, metadata)
+                return await self.download_and_save_to_mongo(mp3_url=mp3_url,
+                                                             page_url=page_url,
+                                                             instr=instr,
+                                                             timbre=timbre,
+                                                             metadata=metadata)
         return False
 
-    async def process_multiple_samples(self, url_list: List[str]) -> List[bool]:
+    async def process_multiple_samples(self,
+                                       url_list: List[str],
+                                       instr: str,
+                                       timbre: str,
+                                       ) -> List[bool]:
         """Processa multipli samples e salva in MongoDB."""
         results = []
         for i, url in enumerate(url_list, 1):
             logging.info(f"Processing {i}/{len(url_list)}: {url}")
-            success = await self.process_single_sample(url)
+            success = await self.process_single_sample(page_url=url, instr=instr, timbre=timbre)
             results.append(success)
             if i < len(url_list):
                 time.sleep(self.human_behavior.random_delay())
@@ -180,7 +199,10 @@ class SampleFocusExtractor:
             return []
 
 
-async def download_by_category_to_mongo(category_url: str, max_samples: int = 10,
+async def download_by_category_to_mongo(category_url: str,
+                                        max_samples: int = 10,
+                                        instrument: str = "",
+                                        timbre: str = "",
                                         mongo_config: dict = None) -> List[bool]:
     """Scarica samples da una categoria specifica e salva in MongoDB."""
 
@@ -194,7 +216,7 @@ async def download_by_category_to_mongo(category_url: str, max_samples: int = 10
 
     if sample_urls:
         sample_urls = sample_urls[:max_samples]
-        results = await extractor.process_multiple_samples(sample_urls)
+        results = await extractor.process_multiple_samples(url_list=sample_urls, instr=instrument, timbre=timbre)
 
         return results
     else:

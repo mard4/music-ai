@@ -8,13 +8,13 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 
 async def main_samplefocus():
 
-    TARGET_PER_INTERSECTION = 250
+    TARGET_PER_INTERSECTION = 350
 
     # ASSE X: Sorgenti Sonore (Strumenti/Famiglie)
     instruments = [
-        "analog-synth-bass", "bass-line", "sub-bass",  # Bass Family
+        "analog-synth-bass", "bass-line", "sub-bass", "digital-synth-bass", "distorted/bass" # Bass Family
         "kicks", "toms", "claps", "rides", "snare",  # Drums Family
-        "synth pad", "synth lead", "pluck"  # Synth Family
+        "pad", "lead", "pluck","synth-fx"   # Synth Family
     ]
 
     # ASSE Y: Qualità Timbriche (Attributi Percettivi)
@@ -26,8 +26,8 @@ async def main_samplefocus():
     # BLACKLIST SEMANTICA (Filtro Qualità)
     # ==========================================
     impossible_combinations = {
-        ("sub bass", "airy"),  # Il sub bass non ha alte frequenze per essere "airy"
-        ("sub bass", "bright"),  # Contraddizione fisica
+        ("sub-bass", "airy"),  # Il sub bass non ha alte frequenze per essere "airy"
+        ("sub-bass", "bright"),  # Contraddizione fisica
         ("kicks", "airy"),  # Un kick solitamente è solido, non arioso
         ("rides", "warm"),  # I piatti sono metallici (freddi/bright) per definizione
         ("claps", "dark"),  # I clap sono transienti sulle medie-alte
@@ -36,27 +36,29 @@ async def main_samplefocus():
 
     total_successes = 0
 
-    for category in instruments:
+    for instr in instruments:
         for timbre in timbres:
 
             # 1. Controllo Blacklist
-            if (category, timbre) in impossible_combinations:
-                logging.warning(f"SKIP: Combinazione semanticamente improbabile: '{category}' + '{timbre}'")
+            if (instr, timbre) in impossible_combinations:
+                logging.warning(f"SKIP: Combinazione semanticamente improbabile: '{instr}' + '{timbre}'")
                 continue
 
             # 2. Costruzione URL Filtrata (Category + Tag)
             # Pattern: https://samplefocus.com/categories/{category}?tags[]={timbre}
-            base_url = f"https://samplefocus.com/categories/{category}"
+            base_url = f"https://samplefocus.com/categories/{instr}"
             query_params = f"?tags[]={timbre}&min_tempo=0&max_tempo=200"
 
             intersection_url = base_url + query_params
 
-            print(f"\nProcessing Intersezione: [{category.upper()}] + [{timbre.upper()}]")
+            print(f"\nProcessing Intersezione: [{instr.upper()}] + [{timbre.upper()}]")
             print(f"URL: {intersection_url}")
 
             # 3. Download con Cap
             results = await download_by_category_to_mongo(
                 category_url=intersection_url,
+                instrument=instr,
+                timbre=timbre,
                 max_samples=TARGET_PER_INTERSECTION,
                 mongo_config=mongo_config
             )

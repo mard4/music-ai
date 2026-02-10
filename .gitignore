@@ -18,7 +18,7 @@ clap_training_log/
 export_mongo_data.py
 logs/
 temp_uploads/
-
+graphs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

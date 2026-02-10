@@ -32,5 +32,6 @@ class LabelEnricher(AgentBase):
         return self.tool.predict_label_from_neighbors(
             filename=filename,
             audio_path=audio_path,
-            neighbors=neighbors
+            neighbors=neighbors,
+            original_label=filename
         )

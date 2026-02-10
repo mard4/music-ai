@@ -1,7 +1,6 @@
 import asyncio
 
 from data_ingestion.ingestors.enrich_audio_doublevectors import EnrichedCollectionIngestor
-from data_ingestion.ingestors.ingest_audio import AudioCatalogIngestor
 from data_ingestion.ingestors.ingest_parameters import SocialFXIngestor
 
 

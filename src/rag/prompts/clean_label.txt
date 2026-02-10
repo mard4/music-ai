@@ -3,22 +3,27 @@ Analyze this audio file to GENERATE A NEW SEMANTIC LABEL and REFINE ITS TAGS.
 ### AVAILABLE INFORMATION:
 1. **ORIGINAL LABEL**: "{{label}}"
 2. **ORIGINAL TAGS**: {{tags}}
-3. **CONTEXT**: Music production sample library.
+3. **INSTRUMENT CATEGORY**: {{main_category}}
+4. **CONTEXT**: Music production sample library.
 
 ### YOUR TASK:
 Perform a deep semantic analysis to produce two outputs: a descriptive **Caption** and a list of **Smart Tags**.
 
 **PHASE 1: EXTRACTIVE ANALYSIS**
-- Identify the **main sound category** (e.g., Kick, Bass, texture) from the label.
-- If available, analyze the `ORIGINAL TAGS` to find technical details (e.g., "analog", "dry", "120bpm") and timbral qualities (e.g., "warm", "distorted").
+Objective: Determine the fundamental nature of the sample starting from the most explicit sources.
+- Primary Input: The value of INSTRUMENT CATEGORY ({{main_category}}) is considered the most authoritative source.
+- Confirmation/Integration: The ORIGINAL LABEL ({{label}}) is examined to verify or reinforce this categorization.
+    for example: If the main_category were generic (e.g. Drum), the label would allow it to be specified.
+- If available, analyze the `ORIGINAL TAGS` to find technical details (e.g., "analog", "dry") and timbral qualities (e.g., "warm", "distorted").
 
 **PHASE 2: CAPTION GENERATION**
-- Create a concise, natural description.
-- Structure: `[CATEGORY] + [TIMBRAL QUALITIES] + [TECHNICAL SPECS]`.
+- Create a concise, natural description, without inventing any terms.
+- Structure: `[INSTRUMENT CATEGORY] + [TIMBRAL QUALITIES] + [TECHNICAL SPECS]`.
 - Example: "Fat Analog Synth Bass with Warm Saturation".
 
 **PHASE 3: SEMANTIC TAG REFINEMENT (The Filter)**
-Review the `ORIGINAL TAGS` list and apply this logic to generate `smart_tags`:
+DO NOT ADD NEW TAGS. Only refine the existing ones based on the following logic:
+Review the `ORIGINAL TAGS` list and apply this logic to generate `ai_tags`:
 1. **KEEP** tags that describe the sound texture (e.g., "warm", "fuzzy", "punchy").
 2. **KEEP** tags that describe the instrument/category (e.g., "bass", "synth").
 3. **DISCARD** contradictory tags (e.g., remove "drums" or "perc" if the sound is a "Bass").
@@ -29,5 +34,5 @@ Review the `ORIGINAL TAGS` list and apply this logic to generate `smart_tags`:
 Respond with a valid **JSON Object** containing exactly these keys:
 {
   "caption": "The generated descriptive label",
-  "smart_tags": ["tag1", "tag2", "tag3"]
+  "ai_tags": ["tag1", "tag2", "tag3"]
 }
