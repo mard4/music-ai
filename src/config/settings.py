@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from typing import Optional
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).parent.parent
 ENV_FILE_PATH = BASE_DIR / ".env"
@@ -12,12 +12,22 @@ class DatabaseSettings(BaseSettings):
     """
     Configurazioni del database MongoDB.
     """
+    model_config = SettingsConfigDict(
+        env_file=str(ENV_FILE_PATH),
+        env_file_encoding='utf-8',
+        extra='ignore'
+    )
+
     mongodb_connection_string: str = Field(
         default="mongodb://localhost:27017/",
         description="Connection string per MongoDB"
     )
     mongodb_database_name: str = Field(
         default="audio_db",
+        description="Nome del database"
+    )
+    mongodb_database_name_test: str = Field(
+        default="audio_db_test",
         description="Nome del database"
     )
     mongodb_audio_collection: str = Field(
@@ -110,5 +120,6 @@ mongo_config = {
     "database_name": settings.database.mongodb_database_name,
     #"gridfs_bucket": settings.database.mongodb_gridfs_bucket,
     "audio_collection": settings.database.mongodb_audio_collection,
-    "socialfx_collection": settings.database.mongodb_socialfx_collection
+    "socialfx_collection": settings.database.mongodb_socialfx_collection,
+    "database_name_test": settings.database.mongodb_database_name_test
 }

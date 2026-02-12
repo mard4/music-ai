@@ -27,6 +27,7 @@ class AudioFilesRepository(ABC):
     @abstractmethod
     async def find_audio_by_filter(
         self,
+        filename: Optional[str] = None,
         file_type: Optional[str] = None,
         label: Optional[str] = None,
         source: Optional[str] = None,
