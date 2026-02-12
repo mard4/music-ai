@@ -9,18 +9,28 @@ from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
 from qdrant_client import QdrantClient
 from scipy.spatial.distance import cosine
 from bson import ObjectId
-
-# Ensure project root is in sys.path
 sys.path.append(os.path.abspath("."))
 from config.settings import settings
 from rag.clap.model_handler import create_clap_model
 
-# --- CONFIGURATION ---
+"""
+Metriche di Similarità Audio (Audio-to-Audio)
+- Category Hit Rate@K (Zero-Shot Accuracy):
+Simile alla Precision, ma applicata all'audio. Dato un file audio di input (es. un "Kick"), qual è la percentuale di vicini che sono anch'essi "Kick"? Dimostra che il modello CLAP raggruppa correttamente gli strumenti senza bisogno di testo.
+- Tag Overlap (Jaccard Index):
+Misura la coerenza timbrica e semantica. Calcola l'intersezione tra i tag del file di input (es. "warm", "analog") e i tag dei risultati trovati. Un valore alto indica che il sistema trova suoni con la stessa "texture", non solo lo stesso strumento.
+- Mean Acoustic Similarity (Internal Consistency):
+La media dei punteggi di similarità coseno tra il vettore audio di input e i vettori audio recuperati. Indica quanto il sistema considera "vicini" i risultati nello spazio latente acustico.
+
+"""
+
+
 INDEX_COLLECTION_NAME = settings.QDRANT_ENRICHED_COLLECTION_NAME
 TOP_K = 10
 DB_NAME = "audio_db_test"
 COLLECTION_NAME = "audio_samples"
 MONGODB_URI = "mongodb://localhost:27017/"
+OUTPUT_PATH = "results"
 
 
 # --- METRIC UTILS ---
@@ -40,9 +50,7 @@ def normalize_tags(tag_list: List) -> Set[str]:
 
 def get_cosine_similarity(vec1, vec2):
     """Calcola la similarità coseno (1 - distanza coseno)."""
-    # CLAP vectors are normalized, but scipy cosine distance is robust
     return 1 - cosine(vec1, vec2)
-
 
 # --- MAIN EVALUATION ---
 async def run_audio_retrieval_evaluation():
@@ -50,17 +58,13 @@ async def run_audio_retrieval_evaluation():
     print(f"Index: {INDEX_COLLECTION_NAME}")
     print(f"Test DB: {DB_NAME} (Held-out samples)")
 
-    # 1. INIT CLIENTS
     client_q = QdrantClient(host=settings.QDRANT_CONNECTION_HOST, port=settings.QDRANT_PORT)
     mongo_client = AsyncIOMotorClient(MONGODB_URI)
     test_db = mongo_client[DB_NAME]
     test_collection = test_db[COLLECTION_NAME]
     gridfs = AsyncIOMotorGridFSBucket(test_db, bucket_name="audio_files")
-
-    print("Loading CLAP Model...")
     clap = create_clap_model()
 
-    # 2. FETCH TEST SAMPLES
     cursor = test_collection.find({})
     test_samples = await cursor.to_list(length=None)
 
@@ -78,11 +82,12 @@ async def run_audio_retrieval_evaluation():
         sample_data = sample.get("sample", {})
         metadata = sample.get("metadata", {})
         file_name = sample_data.get("file_name", "unknown")
+        label = sample.get("label","")
 
         # GridFS ID Handling
         raw_id = sample.get("gridfs_file_id")
         if not raw_id:
-            print(f"⚠️ Skipping {file_name}: Missing gridfs_file_id")
+            print(f" Skipping {file_name}: Missing gridfs_file_id")
             continue
         try:
             file_id = ObjectId(raw_id)
@@ -98,7 +103,7 @@ async def run_audio_retrieval_evaluation():
         # --- CROSS-MODAL PREPARATION ---
         # Costruiamo il "Prompt Ideale" basato sui metadati reali del file di test
         # Questo ci serve per validare se l'audio recuperato "matcha" la descrizione testuale
-        gt_description = f"{query_category} {' '.join(query_tags)}".strip()
+        gt_description = f"{query_category}-{label}-{' '.join(query_tags)}".strip()
         gt_text_vec = None
         if gt_description:
             gt_text_vec = clap.get_text_embedding([gt_description])[0]
@@ -115,7 +120,7 @@ async def run_audio_retrieval_evaluation():
             tmp.close()
             audio_vec = clap.get_audio_embedding([tmp_path])[0]
         except Exception as e:
-            print(f"  ❌ Error processing audio: {e}")
+            print(f" Error processing audio: {e}")
             try:
                 tmp.close()
             except:
@@ -136,16 +141,16 @@ async def run_audio_retrieval_evaluation():
                 using="audio_vector",
                 limit=TOP_K,
                 with_payload=True,
-                with_vectors=["audio_vector"]  # NECESSARIO: Recuperiamo i vettori per il calcolo cross-modale
+                with_vectors=["audio_vector"]
             )
         except Exception as e:
-            print(f"  ⚠️ Qdrant Error: {e}")
+            print(f" Qdrant Error: {e}")
             continue
 
         # C. Calculate Metrics
         cat_hits = 0
         jaccard_sum = 0.0
-        similarity_sum = 0.0  # Audio-to-Audio (Circular but useful for precision)
+        similarity_sum = 0.0
         cross_modal_sum = 0.0  # Input Text -> Output Audio (Validation Metric)
 
         for hit in search_res.points:
@@ -177,6 +182,7 @@ async def run_audio_retrieval_evaluation():
 
         results_log.append({
             "Query File": file_name,
+            "Created Name Crossmodal": gt_description,
             "Category": query_category,
             "Hit Rate@K": cat_hits / TOP_K,
             "Tag Overlap@K": jaccard_sum / TOP_K,
@@ -184,21 +190,31 @@ async def run_audio_retrieval_evaluation():
             "Cross-Modal Alignment": cross_modal_sum / TOP_K if gt_text_vec is not None else 0.0
         })
 
-    # 4. REPORTING
     df = pd.DataFrame(results_log)
     if df.empty:
         print("No results generated.")
         return
 
-    print("\n--- AGGREGATED RESULTS ---")
     print(f"Total Samples: {len(df)}")
     print(f"Category Hit Rate@{TOP_K}:    {df['Hit Rate@K'].mean():.4f}")
     print(f"Tag Overlap@{TOP_K}:         {df['Tag Overlap@K'].mean():.4f}")
     print(f"Mean Audio Similarity:      {df['Mean Audio Similarity'].mean():.4f} (Internal Consistency)")
     print(f"Cross-Modal Alignment:      {df['Cross-Modal Alignment'].mean():.4f} (Semantic Validation)")
+    final_tabella = pd.DataFrame(
+        {
+            "Metric": ["Category Hit Rate@K", "Tag Overlap@K", "Mean Audio Similarity", "Cross-Modal Alignment"],
+            "Average Score": [
+                df['Hit Rate@K'].mean(),
+                df['Tag Overlap@K'].mean(),
+                df['Mean Audio Similarity'].mean(),
+                df['Cross-Modal Alignment'].mean()
+            ]
+        }
+    )
 
-    # Save
-    df.to_csv("audio_retrieval_evaluation_crossmodal.csv", index=False)
+
+    df.to_csv(f"{OUTPUT_PATH}/audio_retrieval_evaluation_crossmodal.csv", index=False)
+    final_tabella.to_csv(f"{OUTPUT_PATH}/audio_retrieval_evaluation_crossmodal_summary.csv", index=False)
     print("\nSaved to 'audio_retrieval_evaluation_crossmodal.csv'")
 
 
