@@ -8,21 +8,12 @@ Confidence Level: {{ results.analysis.confidence }}
 
 ### INSTRUCTIONS
 1. **Diagnosis**: Describe the sound based on the detected characteristics.
-2. **Recreation (DSP)**: If a recipe is available, briefly mention how to sculpt this sound.
-3. **Similar Sounds**: Present the retrieved neighbors.
+2. **Similar Sounds**: Present the retrieved neighbors.
 
 ### RESPONSE FORMAT (HTML)
 
 <p>I analyzed <b>{{ results.filename }}</b>. It appears to be a <b>{{ results.analysis.description }}</b>.</p>
 
-{% if results.dsp_html %}
-<details style="margin-bottom: 20px; border: 1px solid #ddd; padding: 10px; border-radius: 5px;">
-    <summary style="cursor: pointer; font-weight: bold; color: #2980b9;">🛠 How to recreate this sound?</summary>
-    <div style="margin-top: 10px;">
-        {{ results.dsp_html }}
-    </div>
-</details>
-{% endif %}
 
 {% if results.recommendations %}
 <div class="samples-container">

@@ -9,7 +9,8 @@ from typing import List, Dict, Optional
 from core.infrastructure.database.dependecies import (
     get_audio_repository,
     get_gridfs_handler,
-    get_mongo_client
+    get_mongo_client,
+    get_train_audio_repository
 )
 from core.infrastructure.storage.gridfs_handler import GridFSHandler
 from core.interfaces.repositories import AudioFilesRepository
@@ -127,7 +128,7 @@ class SampleFocusExtractor:
                     key=metadata.get('key'),
                     main_category=instr,
                     main_tag=timbre,
-                    original_split='train'
+                    original_split='test'
                 )
 
                 # Costruiamo l'oggetto AudioFile parziale per usarlo nei metadata di GridFS
@@ -162,6 +163,17 @@ class SampleFocusExtractor:
         """Processa un singolo sample."""
         logging.info(f"Processing: {page_url}")
         mp3_url = self.extract_mp3_url(page_url)
+
+        # check if mp3 already present in audio_db
+        if mp3_url:
+            train_repository = get_train_audio_repository()
+            sample_name = page_url.split('/')[-1]
+            filename = f"{sample_name}.mp3"
+            existing = await train_repository.find_audio_by_filter(filename=filename)
+            if existing:
+                logging.info(f"Sample già presente in DB di train, skipping: {mp3_url}")
+                return True
+
         if mp3_url:
             metadata = extract_sample_metadata(page_url, self.scraper)
             if metadata:
@@ -226,5 +238,5 @@ async def download_by_category_to_mongo(category_url: str,
 async def create_samplefocus_extractor(mongo_config: dict = None) -> SampleFocusExtractor:
     return SampleFocusExtractor(
         repository=get_audio_repository(),
-        gridfs_handler=get_gridfs_handler()
+        gridfs_handler=get_gridfs_handler(),
     )

@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 
 async def main_samplefocus():
 
-    TARGET_PER_INTERSECTION = 350
+    TARGET_PER_INTERSECTION = 100 #350
 
     # ASSE X: Sorgenti Sonore (Strumenti/Famiglie)
     instruments = [
@@ -48,8 +48,8 @@ async def main_samplefocus():
             # Pattern: https://samplefocus.com/categories/{category}?tags[]={timbre}
             base_url = f"https://samplefocus.com/categories/{instr}"
             query_params = f"?tags[]={timbre}&min_tempo=0&max_tempo=200"
-
-            intersection_url = base_url + query_params
+            sort_by = "&sort_by=Popular"
+            intersection_url = base_url + query_params + sort_by
 
             print(f"\nProcessing Intersezione: [{instr.upper()}] + [{timbre.upper()}]")
             print(f"URL: {intersection_url}")

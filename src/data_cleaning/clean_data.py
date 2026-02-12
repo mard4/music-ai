@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 
 # Setup path per importare i moduli del progetto
-sys.path.append(os.path.abspath("."))
+sys.path.append(os.path.abspath("../data_exploration"))
 
 from motor.motor_asyncio import AsyncIOMotorGridFSBucket
 from core.infrastructure.database.dependecies import get_mongo_client
@@ -14,7 +14,7 @@ from config.settings import settings, DatabaseSettings
 # Configurazione Logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
-DB_NAME = "audio_db"
+DB_NAME = "audio_db_test"
 COLLECTION_NAME = "audio_samples"
 
 

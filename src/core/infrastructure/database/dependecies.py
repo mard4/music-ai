@@ -210,3 +210,38 @@ def get_vector_repository(
         client = get_qdrant_client()
 
     return QdrantVectorRepository(client)
+
+
+@lru_cache(maxsize=1)
+def get_train_audio_repository() -> AudioFilesRepository:
+    """
+    Returns the audio repository specifically for the Training dataset.
+    Forces connection to 'audio_db' (or whatever is default in settings)
+    even if the current run is configured for 'audio_db_test'.
+    """
+    client = get_mongo_client()
+
+    db_name = "audio_db" #settings.database.mongodb_database_name
+
+    db = client[db_name]
+    collection_name = settings.database.mongodb_audio_collection
+    collection = db[collection_name]
+
+    return MongoAudioFilesRepository(collection)
+
+@lru_cache(maxsize=1)
+def get_test_audio_repository() -> AudioFilesRepository:
+    """
+    Returns the audio repository specifically for the Training dataset.
+    Forces connection to 'audio_db' (or whatever is default in settings)
+    even if the current run is configured for 'audio_db_test'.
+    """
+    client = get_mongo_client()
+
+    db_name = settings.database.mongodb_database_name_test
+
+    db = client[db_name]
+    collection_name = settings.database.mongodb_audio_collection
+    collection = db[collection_name]
+
+    return MongoAudioFilesRepository(collection)

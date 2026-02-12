@@ -47,6 +47,7 @@ class MongoAudioFilesRepository(AudioFilesRepository):
 
     async def find_audio_by_filter(
             self,
+            filename: Optional[str] = None,
             file_type: Optional[str] = None,
             label: Optional[str] = None,
             source: Optional[str] = None,
@@ -59,6 +60,9 @@ class MongoAudioFilesRepository(AudioFilesRepository):
         Trova file audio per filtri.
         """
         query = {}
+
+        if filename:
+            query['sample.filename'] = {'$regex': filename, '$options': 'i'}
 
         if file_type:
             query['sample.file_type'] = file_type
