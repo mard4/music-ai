@@ -1,0 +1,5 @@
+Metric,Average Score
+Category Hit Rate@K,0.477410071942446
+Tag Overlap@K,0.077869171892597
+Mean Audio Similarity,0.7154835519985611
+Cross-Modal Alignment,0.1274589078414899

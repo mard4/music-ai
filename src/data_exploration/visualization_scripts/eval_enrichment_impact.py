@@ -8,16 +8,24 @@ from openai import OpenAI
 from scipy.spatial.distance import cosine
 import sys
 import os
-
-# Setup Path
 sys.path.append(os.path.abspath("."))
 from config.settings import settings
 
-# --- CONFIGURATION ---
-COLLECTION_NAME = settings.QDRANT_ENRICHED_COLLECTION_NAME
-TOP_K = 5  # Prendiamo i top 5 per ogni query per analizzarli a fondo
+"""
+3. Metriche di Validazione Semantica (Enrichment Impact)
+Cross-Modal Alignment Score:
+Una metrica di validazione incrociata. Misura la similarità tra il vettore Audio del risultato trovato e il vettore Testo della descrizione ideale (Ground Truth) del file cercato. Serve a provare che ciò che è simile acusticamente è anche coerente semanticamente.
 
-# Query complesse che mettono alla prova il sistema
+Mean Semantic Gain (MSG):
+Quantifica il valore aggiunto dell'AI. È la differenza tra la similarità della query con la ai_label (Enriched) rispetto alla similarità con l'original_filename (Raw). Un valore positivo dimostra matematicamente che l'arricchimento ha reso il file "più trovabile".
+
+
+"""
+
+
+COLLECTION_NAME = settings.QDRANT_ENRICHED_COLLECTION_NAME
+TOP_K = 5
+
 TEST_QUERIES = [
     "Dark cinematic drone with granular texture",
     "Punchy analog kick drum for techno",

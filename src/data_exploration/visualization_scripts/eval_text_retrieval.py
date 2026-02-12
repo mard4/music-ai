@@ -6,17 +6,22 @@ from qdrant_client import QdrantClient
 from openai import OpenAI
 import sys
 import os
-
-# Ensure the project root is in sys.path
 sys.path.append(os.path.abspath("."))
 from config.settings import settings
 
-# --- CONFIGURATION ---
+"""
+Metriche di Retrieval (Text-to-Audio)
+- Precision@K (Category Consistency):Misura la purezza dei risultati. Se cerchi "Dark Techno Bass", qual è la percentuale dei primi $K$ file restituiti che appartengono effettivamente alla categoria "Bass"? Indica l'affidabilità di base del sistema.
+- Recall@K (Target Retrieval):Misura la capacità di recupero. In uno scenario controllato (dove sappiamo che esiste un file specifico che corrisponde alla query), il sistema riesce a includerlo nei primi $K$ risultati?
+- MRR (Mean Reciprocal Rank):Misura la tempestività del risultato. Indica quanto in alto appare il primo risultato rilevante. Un valore di 1.0 significa che il file perfetto è sempre al primo posto; valori più bassi indicano che l'utente deve scorrere la lista.
+- nDCG@K (Ranking Quality):Valuta la qualità dell'ordinamento con rilevanza graduata. Premia il sistema se posiziona i risultati "perfetti" (match di categoria + timbro) prima dei risultati "parziali" (solo categoria). È la metrica più raffinata per la user experience.
+"""
+
+OUTPUT_PATH = "results"
 COLLECTION_NAME = settings.QDRANT_ENRICHED_COLLECTION_NAME
-TOP_K = 10  # Number of results to evaluate per query
+TOP_K = 10
 
 
-# --- METRICS UTILS (NumPy 2.0 Safe) ---
 
 def dcg_at_k(r, k, method=0):
     r = np.asarray(r, dtype=float)[:k]
@@ -131,7 +136,7 @@ def generate_type1_metadata_queries(sample_pool: List[Dict]) -> List[Dict]:
         queries.append({
             "query_text": query_text,
             "targets": {"category": cat, "descriptors": selected_tags},
-            "source_filename": fname  # <--- IMPORTANTE: ID da escludere
+            "source_filename": fname
         })
     return queries
 
@@ -189,7 +194,7 @@ async def run_evaluation():
             payload = hit.payload or {}
             hit_filename = payload.get('original_filename')
 
-            # --- CRITICAL FIX: SELF-EXCLUSION ---
+            # --- SELF-EXCLUSION ---
             # Se il risultato è lo stesso file che ha generato la query, SALTALO.
             if source_filename and hit_filename == source_filename:
                 continue
@@ -203,6 +208,7 @@ async def run_evaluation():
         ndcg = ndcg_at_k(relevance_scores, TOP_K)
         precision = precision_at_k(relevance_scores, TOP_K)
         mrr = mrr_at_k(relevance_scores, TOP_K)
+
 
         results_log.append({
             "Type": q_type,
@@ -220,14 +226,16 @@ async def run_evaluation():
         print("Nessun dato generato.")
         return
 
-    print("\n--- AGGREGATED METRICS (STRICT) ---")
     grouped = df.groupby("Type")[["nDCG", "Precision", "MRR"]].mean()
     print(grouped)
 
     print("\n--- DETAILED LOG ---")
     print(df[["Type", "Query", "nDCG", "Precision"]])
 
-    df.to_csv("retrieval_evaluation_strict.csv", index=False)
+
+    df.to_csv(f"{OUTPUT_PATH}/retrieval_evaluation.csv", index=False)
+
+    grouped.to_csv(f"{OUTPUT_PATH}/retrieval_evaluation_summary.csv", index=False)
     print("\nResults saved to 'retrieval_evaluation_strict.csv'")
 
 

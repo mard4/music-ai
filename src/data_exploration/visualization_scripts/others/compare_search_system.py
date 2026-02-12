@@ -4,26 +4,19 @@ from qdrant_client import QdrantClient
 import sys
 import os
 
-# Setup Path
-sys.path.append(os.path.abspath("."))
+sys.path.append(os.path.abspath(".."))
 from config.settings import settings
 from rag.clap.model_handler import create_clap_model
-
-# --- CONFIGURAZIONE DEL TEST ---
-# 1. Scegli un file audio REALE che hai sul disco (es. un Kick Drum)
-# Se non ne hai uno, scaricane uno al volo o usa un path assoluto
 QUERY_AUDIO_PATH = "C:/Users/marti/Desktop/dark-distorted-hard-trap-bass_F_minor.wav"
-
 REAL_AUDIO_PATH = "C:/Users/marti/Desktop/dark-distorted-hard-trap-bass_F_minor.wav"
 
-# 2. Dagli un nome FALSO e ingannevole
 FAKE_FILENAME = "Romantic_Violin_Concerto_in_D_Major.wav"
 FAKE_LABEL = "Violin Solo Classical"
 
 
 # --- ESECUZIONE ---
 async def run_misleading_test():
-    print(f"--- 🚫 MISLEADING METADATA TEST ---")
+    print(f"---  MISLEADING METADATA TEST ---")
     print(f"Subject: Audio Analysis Capabilities")
     print(f"Real Audio Content: KICK DRUM (Perceptual Reality)")
     print(f"Fake Metadata Label: '{FAKE_LABEL}' (Textual Deception)")
