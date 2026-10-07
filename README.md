@@ -1,19 +1,23 @@
 # Music AI: Bridging the Semantic Gap in Audio Retrieval
 
-<img width="400" height="400" alt="system_text" src="https://github.com/user-attachments/assets/65b5377b-200e-432f-b453-744e33951602" />
-<img width="400" height="400" alt="system_audio" src="https://github.com/user-attachments/assets/c54fc45c-e7ca-4892-af0c-1c4c2bb7cd9a" />
+<img alt="Music AI" src="docs/images/cover.png" width="800" />
+
+<img width="400" alt="Text-to-audio search" src="docs/images/plugin_text_search.png" />
+<img width="400" alt="Audio analysis" src="docs/images/plugin_audio_analysis.png" />
 
 ## Overview
 
 In music production, there is a "semantic gap" between technical, machine-readable metadata and the subjective, perceptual language (e.g., "punchy," "warm") humans use to describe sound. This project bridges that gap using a high-precision, semantically enriched dataset, Large Language Models (LLMs), and Contrastive Language-Audio Pretraining (CLAP) to create an intelligent, Audio-Native Agentic RAG assistant.
 
-<img width="400" height="413" alt="rawmedia_tosemantics" src="https://github.com/user-attachments/assets/50065df2-b1b9-49d3-bbd6-b844202bfb9f" /> 
+<img width="800" alt="From signal to meaning: the semantic gap" src="docs/images/semantic_gap.png" />
 
 ---
 
 ## Architecture & Codebase
 
 The project is built on a modular, three-layer architecture. The codebase is structured to mirror these layers, handling data ingestion, AI-driven enrichment, and user-facing orchestration:
+
+<img width="800" alt="Project phases: data extraction, data exploration, data ingestion and agentic RAG" src="docs/images/project_phases.png" />
 
 ### 1. Data Layer (Storage & Ingestion)
 
@@ -22,18 +26,18 @@ The project is built on a modular, three-layer architecture. The codebase is str
 
 ### 2. Semantic Enrichment Layer (Core Intelligence)
 
-<img width="300" height="300" alt="clean_label" src="https://github.com/user-attachments/assets/c1d83746-f52c-45d7-9047-63fcd15bd22a" />
+<img width="800" alt="Semantic enrichment pipeline" src="docs/images/enrichment_pipeline.png" />
 
 * **Function:** Transforms noisy, user-generated folksonomies into structured, natural language captions.
 * **Implementation:**
   * **LLM Synthesis & Hallucination Check:** Python-based pipelines that use an LLM to generate captions, followed by a CLAP-based validation step. This checks the cosine similarity between the generated text and the audio signal to prevent hallucinations.
-    <img width="300" height="300" alt="hallucination_check" src="https://github.com/user-attachments/assets/e6084787-ebd5-472f-adef-a5a178f7526d" />
 
   * **Dual-Vector Indexing:** The validated text vectors (1536-dimensional) and CLAP audio vectors (512-dimensional) are pushed to a **Qdrant** vector database for high-performance similarity search.
     <img width="300" height="300" alt="audio_retrieval" src="https://github.com/user-attachments/assets/0847735d-83bf-4280-bdb7-451a5bd899a4" />
 
 ### 3. Orchestration Layer (Agentic RAG & UI)
 
+<img width="800" alt="Agentic orchestration" src="docs/images/agentic_orchestration.png" />
 
 * **Function:** A dynamic routing layer that acts as the central nervous system for processing user queries via a Chat UI.
 * **Implementation:** A network of specialized AI agents:
