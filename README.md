@@ -1,9 +1,10 @@
 # Music AI: Bridging the Semantic Gap in Audio Retrieval
 
-<img alt="Music AI" src="docs/images/cover.png" width="800" />
+## Text-to-audio search
+<img width="800" alt="Text-to-audio search" src="docs/images/plugin_text_search.png" />
 
-<img width="400" alt="Text-to-audio search" src="docs/images/plugin_text_search.png" />
-<img width="400" alt="Audio analysis" src="docs/images/plugin_audio_analysis.png" />
+## Audio-to-audio search
+<img width="800" alt="Audio analysis" src="docs/images/plugin_audio_analysis.png" />
 
 ## Overview
 
