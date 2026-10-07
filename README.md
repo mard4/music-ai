@@ -8,6 +8,13 @@
 ![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
+**Music AI is a sample-search assistant for music producers.** Sample libraries describe sounds with technical tags and file names, but producers think in words like "punchy", "warm" or "dark". Music AI lets you find samples the way you hear them:
+
+* **Describe a sound in plain words** ("a distorted synth bass that feels very dark") and get matching samples, plus effect settings to get closer to that sound.
+* **Drop in an audio file** and get a description of how it sounds, clean tags, and the most similar samples in the library.
+
+Under the hood it combines a sample library enriched with LLM-written captions, CLAP audio-text embeddings and a team of AI agents (agentic RAG). It is served through a FastAPI chat endpoint; the screenshots below show it as a plugin inside a DAW.
+
 ## Text-to-audio search
 <img width="800" alt="Text-to-audio search" src="docs/images/plugin_text_search.png" />
 
