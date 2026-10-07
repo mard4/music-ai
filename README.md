@@ -1,4 +1,4 @@
-# Music AI: Bridging the Semantic Gap in Audio Retrieval
+# Timbre: Search Samples the Way You Hear Them
 
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
@@ -8,7 +8,7 @@
 ![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
-**Music AI is a sample-search assistant for music producers.** Sample libraries describe sounds with technical tags and file names, but producers think in words like "punchy", "warm" or "dark". Music AI lets you find samples the way you hear them:
+**Timbre is a sample-search assistant for music producers.** Sample libraries describe sounds with technical tags and file names, but producers think in words like "punchy", "warm" or "dark". Timbre lets you find samples the way you hear them:
 
 * **Describe a sound in plain words** ("a distorted synth bass that feels very dark") and get matching samples, plus effect settings to get closer to that sound.
 * **Drop in an audio file** and get a description of how it sounds, clean tags, and the most similar samples in the library.
