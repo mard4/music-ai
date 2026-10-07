@@ -112,3 +112,6 @@ Agents live in `src/rag/agents/`, their prompts in `src/rag/prompts/` and the CL
 
 * **Text-to-Audio Semantic Search:** Our Ablation Study proved that substituting raw, noisy tags with LLM-synthesized captions significantly improved retrieval ranking quality, increasing the **nDCG@5 metric from 0.5851 to 0.8460**.
 * **Audio-to-Audio Search:** The CLAP-powered analysis successfully bypasses the human "vocabulary mismatch" problem, relying strictly on acoustic features to find highly coherent topological neighbors even when human-assigned tags completely diverge.
+
+## IMPORTANT NOTE
+The front-end is yet to be implemented (we used a mockup)
