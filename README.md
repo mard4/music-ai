@@ -1,5 +1,13 @@
 # Music AI: Bridging the Semantic Gap in Audio Retrieval
 
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
+![Qdrant](https://img.shields.io/badge/Qdrant-DC244C?style=for-the-badge&logo=qdrant&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=for-the-badge)
+![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+
 ## Text-to-audio search
 <img width="800" alt="Text-to-audio search" src="docs/images/plugin_text_search.png" />
 
@@ -14,38 +22,82 @@ In music production, there is a "semantic gap" between technical, machine-readab
 
 ---
 
-## Architecture & Codebase
+## Architecture
 
-The project is built on a modular, three-layer architecture. The codebase is structured to mirror these layers, handling data ingestion, AI-driven enrichment, and user-facing orchestration:
+The project is split into four phases, each living in its own folder under `src/`. The first three run once to build the dataset; the last one answers every request.
 
 <img width="800" alt="Project phases: data extraction, data exploration, data ingestion and agentic RAG" src="docs/images/project_phases.png" />
 
-### 1. Data Layer (Storage & Ingestion)
+| Phase | Folder | Services | Output |
+| --- | --- | --- | --- |
+| 1. Data extraction | `src/data_retrievial/` | <img src="https://cdn.simpleicons.org/python/3776AB" width="18" alt="Python"/> <img src="https://cdn.simpleicons.org/mongodb/47A248" width="18" alt="MongoDB"/> | Audio in GridFS, metadata in MongoDB |
+| 2. Data exploration | `src/data_exploration/` | <img src="https://cdn.simpleicons.org/python/3776AB" width="18" alt="Python"/> <img src="https://cdn.simpleicons.org/mongodb/47A248" width="18" alt="MongoDB"/> | Descriptor vocabulary |
+| 3. Data ingestion | `src/data_ingestion/` | <img src="https://cdn.simpleicons.org/python/3776AB" width="18" alt="Python"/> <img src="https://cdn.simpleicons.org/mongodb/47A248" width="18" alt="MongoDB"/> <img src="https://cdn.simpleicons.org/qdrant/DC244C" width="18" alt="Qdrant"/> | Qdrant collections ready to search |
+| 4. Agentic RAG | `src/rag/`, `src/api.py` | <img src="https://cdn.simpleicons.org/python/3776AB" width="18" alt="Python"/> <img src="https://cdn.simpleicons.org/qdrant/DC244C" width="18" alt="Qdrant"/> <img src="https://cdn.simpleicons.org/fastapi/009688" width="18" alt="FastAPI"/> | Samples, labels and DSP recipes |
 
-* **Function:** Handles the ingestion of raw audio samples using a controlled "Matrix Selection Strategy" to balance instrument classes and perceptual descriptors.
-* **Implementation:** Relies on a **MongoDB** database, utilizing **GridFS** to efficiently split and store audio binary chunks alongside their raw metadata.
+Shared code lives in `src/core/` (domain models, MongoDB/GridFS repositories and the Qdrant repository) and `src/config/settings.py`.
 
-### 2. Semantic Enrichment Layer (Core Intelligence)
+### 1. Data extraction · `src/data_retrievial/`
+
+Collects the raw material and stores it in **MongoDB**, with the audio binaries split into **GridFS** chunks.
+
+* **SampleFocus extractor** · `src/data_retrievial/sample_focus/SampleFocusExtractor.py`
+  Scrapes audio samples and their tags from [SampleFocus](https://samplefocus.com). `sample_focus/main.py` drives it with a *Matrix Selection Strategy*: 11 instruments (bass, drums and synth families) crossed with 8 timbres (warm, cold, soft, happy, heavy, airy, bright, dark), up to 250 samples per cell, skipping physically implausible pairs such as an airy sub bass. `metadata.py` parses the sample page and `privacy_utils.py` rate-limits the requests.
+* **SocialFX extractor** · `src/data_retrievial/socialfx/socialfx_extractor.py`
+  Loads the [SocialFX](https://huggingface.co/datasets/seungheondoh/socialfx-original) dataset from Hugging Face and stores a knowledge base that maps perceptual descriptors (e.g. "warm") to real EQ, compression and reverb parameters.
+
+### 2. Data exploration · `src/data_exploration/`
+
+* `extract_descriptors.py` counts how often each SocialFX descriptor is used and keeps the ones with at least 8 occurrences, saved to `descriptors_list.txt`.
+
+### 3. Data ingestion · `src/data_ingestion/`
+
+Turns the stored samples into searchable vectors in **Qdrant**. Entry point: `src/data_ingestion/main.py`.
 
 <img width="800" alt="Semantic enrichment pipeline" src="docs/images/enrichment_pipeline.png" />
 
-* **Function:** Transforms noisy, user-generated folksonomies into structured, natural language captions.
-* **Implementation:**
-  * **LLM Synthesis & Hallucination Check:** Python-based pipelines that use an LLM to generate captions, followed by a CLAP-based validation step. This checks the cosine similarity between the generated text and the audio signal to prevent hallucinations.
+* **Semantic enrichment** · `ingestors/enrich_audio_doublevectors.py`
+  For every sample in GridFS, the LabelEnricher tool (GPT-4o) rewrites the noisy user tags into a natural-language caption and a cleaner tag set.
+* **Hallucination check** · `src/rag/tools/audio_analysis.py`
+  CLAP embeds both the caption and the audio. If their cosine similarity is at least 0.25 the caption is marked *Verified*, otherwise *Low confidence*; the score is stored as `clap_score` so answers can show how much to trust each label.
+* **Dual-vector indexing**
+  Each sample becomes one point in the `audio_enriched` collection with two named vectors: `text_vector` (caption, `text-embedding-3-small`, 1536-d) and `audio_vector` (CLAP HTSAT, 512-d).
+* **DSP parameters** · `ingestors/ingest_parameters.py`
+  Embeds the SocialFX descriptors into their own `socialfx_vectors` collection.
 
-  * **Dual-Vector Indexing:** The validated text vectors (1536-dimensional) and CLAP audio vectors (512-dimensional) are pushed to a **Qdrant** vector database for high-performance similarity search.
-    <img width="300" height="300" alt="audio_retrieval" src="https://github.com/user-attachments/assets/0847735d-83bf-4280-bdb7-451a5bd899a4" />
+<img width="300" height="300" alt="audio_retrieval" src="https://github.com/user-attachments/assets/0847735d-83bf-4280-bdb7-451a5bd899a4" />
 
-### 3. Orchestration Layer (Agentic RAG & UI)
+### 4. Agentic RAG · `src/rag/` and `src/api.py`
+
+A **FastAPI** `/chat` endpoint (`src/api.py`) runs the agent workflow in `src/rag/workflow.py`.
 
 <img width="800" alt="Agentic orchestration" src="docs/images/agentic_orchestration.png" />
 
-* **Function:** A dynamic routing layer that acts as the central nervous system for processing user queries via a Chat UI.
-* **Implementation:** A network of specialized AI agents:
-  * **Intent Classifier:** Analyzes natural language to route queries to either analysis (Audio-to-Audio) or retrieval (Text-to-Audio) pathways.
-  * **Label Retriever & Audio Analyst:** Executes searches against the Qdrant database using semantic textual embeddings or raw acoustic CLAP fingerprints.
-  * **Label Enricher (Reverse RAG):** Aggregates tags from the nearest acoustic neighbors to analyze and describe unknown audio signals.
-  * **Humanizer Agent:** Translates high-dimensional JSON outputs into actionable UI responses and audio previews.
+* **Intent Classifier** · decides whether a request is a retrieval (text) or an analysis (audio).
+* **Retrieval** · the Audio Retriever ranks samples by caption similarity on `text_vector`, while the Sound Designer looks up DSP parameters for the adjectives in the query in `socialfx_vectors`. Both run in parallel.
+* **Analysis (Reverse RAG)** · the Audio Analyst fingerprints the uploaded audio with CLAP, finds its nearest neighbours on `audio_vector`, and the Label Enricher writes a label from their tags.
+* **Humanizer** · turns the JSON results into the final answer, with audio previews.
+
+Agents live in `src/rag/agents/`, their prompts in `src/rag/prompts/` and the CLAP model wrapper in `src/rag/clap/`.
+
+---
+
+## Getting started
+
+1. Start MongoDB and Qdrant:
+   ```bash
+   docker compose up -d
+   ```
+2. Install the dependencies (PyTorch with CUDA is listed in `requirements.txt`):
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Set `OPENAI_API_KEY` in your `.env`.
+4. Build the dataset and run the workflow: `PYTHONPATH=src python main.py` runs the SampleFocus and SocialFX extraction, the ingestion and the RAG workflow in sequence.
+5. Serve the API:
+   ```bash
+   cd src && python api.py
+   ```
 
 ---
 
