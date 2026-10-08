@@ -67,10 +67,12 @@ class Settings(BaseSettings):
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     clap: CLAPSettings = Field(default_factory=CLAPSettings)
 
-    # OpenAI
-    OPENAI_API_KEY: Optional[str] = Field(default=None)
-    OPENAI_MODEL: str = Field(default="gpt-4o")
-    OPENAI_EMBEDDING_MODEL: str = Field(default="text-embedding-3-small")
+    MODEL_API_KEY: Optional[str] = Field(default=None)
+    MODEL_MODEL: str = Field(default="gpt-4o")
+    MODEL_EMBEDDING_MODEL: str = Field(default="text-embedding-3-small")
+    #MODEL_BASE_URL = "http://localhost:11434/v1"
+    #MODEL_API_KEY = "ollama"
+    #MODEL_MODEL = "llama3"
 
     # Qdrant
     QDRANT_CONNECTION_HOST: str = Field(default="localhost")
